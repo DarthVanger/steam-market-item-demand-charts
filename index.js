@@ -6,7 +6,7 @@ console.log('market_hash_name: ', market_hash_name)
 const API_KEY = 'jb_EQ2nnwcwrhXpB0GAfJMgEhIo'
 const APP_ID = 730
 
-const url = `http://api.steamapis.com/market/item/${APP_ID}/${market_hash_name}?api_key=${API_KEY}`
+const url = `https://api.steamapis.com/market/item/${APP_ID}/${market_hash_name}?api_key=${API_KEY}`
 
 
 google.charts.load('current', {'packages':['corechart', 'line']});
