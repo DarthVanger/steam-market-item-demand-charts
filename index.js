@@ -9,7 +9,7 @@ const APP_ID = 730
 const url = `http://api.steamapis.com/market/item/${APP_ID}/${market_hash_name}?api_key=${API_KEY}`
 
 
-google.charts.load('current', {'packages':['corechart']});
+google.charts.load('current', {'packages':['corechart', 'line']});
 google.charts.setOnLoadCallback(handleGoogleChartLibLoad);
 
 const chartsContainer = document.querySelector('#charts')
@@ -33,104 +33,119 @@ function draw(itemData) {
 
   itemInfoContainer.innerHTML = `<h1>${decodeURI(market_hash_name)}</h1>`
 
-  drawMedianAvgPrices(itemData.median_avg_prices_15days)
-  drawChart({
-    title: 'Sell order quantity',
+  const avgPrices = itemData.median_avg_prices_15days;
+  drawMedianAvgPrices({
+    title: 'Median average prices',
+    avgPrices,
+    isQuantityChart: false,
+  });
+  drawMedianAvgPrices({
+    title: 'Median average quantity',
+    avgPrices,
     isQuantityChart: true,
+  });
+  drawHistogram({
+    title: 'Sell orders price in UAH vs quantity',
     histogram: itemData.histogram.sell_order_graph
   })
-  drawChart({
-    title: 'Sell order price',
-    isQuantityChart: false,
-    histogram:  itemData.histogram.sell_order_graph
-  })
-  drawChart({
-    title: 'Buy order quantity',
-    isQuantityChart: true,
+  drawHistogram({
+    title: 'Buy orders price in UAH vs quantity',
     histogram:  itemData.histogram.buy_order_graph
   })
-  drawChart({
-    title: 'Buy order price',
-    isQuantityChart: false,
-    histogram:  itemData.histogram.buy_order_graph
-  })
+
+  function drawMedianAvgPrices({ title, avgPrices, isQuantityChart }) {
+    console.log('avgPrices: ', avgPrices)
+
+    const chartData = avgPrices
+      .map((item, index) => {
+        const [day, price, quantity] = item;
+        const uahRate = 27.47
+        const priceUAH = Math.round(price * uahRate);
+        const tooltip = `Day: ${day}\nPrice (UAH): ${priceUAH}\nQuantity: ${quantity}`
+        return isQuantityChart ?
+          [day, quantity, tooltip]
+          :
+          [day, priceUAH, tooltip]
+      });
+
+    console.log('chartData: ', chartData)
+
+    var data = new google.visualization.DataTable();
+
+    data.addColumn('string', 'day');
+    data.addColumn('number', isQuantityChart ? 'quantity' : 'price (UAH)');
+    data.addColumn({type: 'string', role: 'tooltip'});
+
+    data.addRows(chartData);
+
+    var options = {
+      title,
+      legend: 'none'
+    };
+
+    var chart = new google.visualization.LineChart(createChartElement());
+
+    chart.draw(data, options);
+  }
+
+  function drawHistogram({ histogram, title  }) {
+    console.log('title: ', title);
+    console.log('histogram: ', histogram);
+
+    const chart_data = histogram
+      .map((item) => {
+        const [price, quantity, tooltip] = item;
+
+        const uahRate = 27.47
+        const tooltipWithUah = tooltip.replace(/(\$[\S]+\s)/, `$1 (${Math.round(price * uahRate)} UAH) `);
+        const priceUAH = Math.round(price * uahRate) 
+
+        return [
+          quantity,
+          priceUAH,
+          tooltipWithUah
+        ]
+      });
+
+    console.log('chart_data: ', chart_data)
+
+    var data = new google.visualization.DataTable();
+
+    data.addColumn('number', 'quantity');
+    data.addColumn('number', 'price');
+    data.addColumn({type: 'string', role: 'tooltip'});
+
+    data.addRows(chart_data);
+
+    var options = {
+      title,
+      legend: 'none',
+      vAxis: {
+        maxValue: usdToUah(itemData.histogram.graph_max_x) + 10,
+        minValue: usdToUah(itemData.histogram.graph_min_x),
+      },
+      hAxis: {
+        maxValue: itemData.histogram.graph_max_y,
+        minValue: 0,
+      }
+    };
+
+    var chart = new google.visualization.LineChart(createChartElement());
+
+    chart.draw(data, options);
+  }
 }
 
-function drawMedianAvgPrices(avgPrices) {
-  console.log('avgPrices: ', avgPrices)
-
-  const chartData = avgPrices
-    .map((item, index) => {
-      const [day, price, quantity] = item;
-      const uahRate = 27.47
-      const priceUAH = Math.round(price * uahRate);
-      const tooltip = `Day: ${day}\nPrice (UAH): ${priceUAH}\nQuantity: ${quantity}`
-      return [day, priceUAH, tooltip]
-    });
-
-  console.log('chartData: ', chartData)
-
-  var data = new google.visualization.DataTable();
-
-  data.addColumn('string', 'day');
-  data.addColumn('number', 'price (UAH)');
-  data.addColumn({type: 'string', role: 'tooltip'});
-
-  data.addRows(chartData);
-
-  var options = {
-    title: 'Median average prices',
-    curveType: 'function',
-    legend: 'none'
-  };
-
-  var chart = new google.visualization.LineChart(createChartElement());
-
-  chart.draw(data, options);
-}
-
-function drawChart({ histogram, title, isQuantityChart }) {
-  console.log('histogram: ', histogram);
-
-  const chart_data = histogram
-    .map((item, index) => {
-      const [price, quantity, tooltip] = item;
-
-      const uahRate = 27.47
-      const tooltipWithUah = tooltip.replace(/(\$[\S]+\s)/, `$1 (${Math.round(price * uahRate)} UAH) `);
-      const priceUAH = price * uahRate 
-
-      return isQuantityChart ? 
-        [index, quantity, tooltipWithUah]
-        :
-        [index, priceUAH, tooltipWithUah]
-    });
-
-  console.log('chart_data: ', chart_data)
-
-  var data = new google.visualization.DataTable();
-
-  data.addColumn('number', 'index');
-  data.addColumn('number', isQuantityChart ? 'quantity' : 'price');
-  data.addColumn({type: 'string', role: 'tooltip'});
-
-  data.addRows(chart_data);
-
-  var options = {
-    title,
-    curveType: 'function',
-    legend: 'none'
-  };
-
-  var chart = new google.visualization.LineChart(createChartElement());
-
-  chart.draw(data, options);
+function usdToUah(usd) {
+  uahRate = 27.47;
+  return Math.round(usd * uahRate);
 }
 
 function createChartElement() {
   const element = document.createElement('div');
-  element.style.width = '100%';
-  //element.style.height = '700px';
+  element.style.width = '1500px';
+  element.style.height = '400px';
+  element.style.marginBottom = '10px';
   chartsContainer.append(element);
   return element;
 }
