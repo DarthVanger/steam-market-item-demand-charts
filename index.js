@@ -33,7 +33,7 @@ function draw(itemData) {
 
   const avgPrices = itemData.median_avg_prices_15days;
   drawMedianAvgPrices({
-    title: 'Median average quantity',
+    title: 'Median average prices',
     avgPrices,
   });
 
