@@ -13,8 +13,6 @@ google.charts.load('current', {'packages':['corechart', 'line']});
 google.charts.setOnLoadCallback(handleGoogleChartLibLoad);
 
 const chartsContainer = document.querySelector('#charts')
-//chartsContainer.style.display = 'flex';
-//chartsContainer.style.flexWrap = 'wrap';
 
 function handleGoogleChartLibLoad() {
   console.log('google chart lib loaded');
@@ -35,23 +33,20 @@ function draw(itemData) {
 
   const avgPrices = itemData.median_avg_prices_15days;
   drawMedianAvgPrices({
-    title: 'Median average prices',
-    avgPrices,
-    isQuantityChart: false,
-  });
-  drawMedianAvgPrices({
     title: 'Median average quantity',
     avgPrices,
-    isQuantityChart: true,
   });
-  drawHistogram({
-    title: 'Sell orders price in UAH vs quantity',
-    histogram: itemData.histogram.sell_order_graph
-  })
-  drawHistogram({
-    title: 'Buy orders price in UAH vs quantity',
-    histogram:  itemData.histogram.buy_order_graph
-  })
+
+  if (itemData.histogram) {
+    drawHistogram({
+      title: 'Sell orders price in UAH vs quantity',
+      histogram: itemData.histogram.sell_order_graph
+    })
+    drawHistogram({
+      title: 'Buy orders price in UAH vs quantity',
+      histogram:  itemData.histogram.buy_order_graph
+    })
+  }
 
   function drawMedianAvgPrices({ title, avgPrices, isQuantityChart }) {
     console.log('avgPrices: ', avgPrices)
@@ -62,25 +57,30 @@ function draw(itemData) {
         const uahRate = 27.47
         const priceUAH = Math.round(price * uahRate);
         const tooltip = `Day: ${day}\nPrice (UAH): ${priceUAH}\nQuantity: ${quantity}`
-        return isQuantityChart ?
-          [day, quantity, tooltip]
-          :
-          [day, priceUAH, tooltip]
+        return [day, priceUAH, quantity, tooltip]
       });
-
-    console.log('chartData: ', chartData)
 
     var data = new google.visualization.DataTable();
 
     data.addColumn('string', 'day');
-    data.addColumn('number', isQuantityChart ? 'quantity' : 'price (UAH)');
+    data.addColumn('number', 'price (UAH)');
+    data.addColumn('number', 'quantity');
     data.addColumn({type: 'string', role: 'tooltip'});
 
     data.addRows(chartData);
 
     var options = {
       title,
-      legend: 'none'
+      series: {
+        // Gives each series an axis name that matches the Y-axis below.
+        0: {targetAxisIndex: 0},
+        1: {targetAxisIndex: 1}
+      },
+      vAxes: {
+        // Adds labels to each axis; they don't have to match the axis names.
+        0: {title: 'Prices (UAH)'},
+        1: {title: 'Quantity'}
+      }
     };
 
     var chart = new google.visualization.LineChart(createChartElement());
