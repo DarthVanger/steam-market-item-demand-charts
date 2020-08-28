@@ -12,7 +12,7 @@ let mongoClient;
 const itemUrl = 'https://steamcommunity.com/market/listings/730/Chroma%203%20Case'
 
 const DB_NAME = 'steamMarket';
-const COLLECTION_NAME = 'fetchedItemsStats';
+const COLLECTION_NAME = 'v3_fetchedItemsStats';
 
 async function run() {
   try {
