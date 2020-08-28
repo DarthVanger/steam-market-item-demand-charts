@@ -15,7 +15,7 @@ async function run() {
   try {
     mongoClient = await mongo.connect();
     const database = mongoClient.db('steamMarket');
-    const collection = database.collection('item6');
+    const collection = database.collection(`v1:${itemUrl}`);
 
     const itemData = await steamApi.fetchItemData(itemUrl);
     console.log('Item data fetched, saving to DB');
