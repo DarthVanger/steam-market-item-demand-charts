@@ -11,17 +11,21 @@ let mongoClient;
 
 const itemUrl = 'https://steamcommunity.com/market/listings/730/Chroma%203%20Case'
 
+const DB_NAME = 'steamMarket';
+const COLLECTION_NAME = 'fetchedItemsStats';
+
 async function run() {
   try {
     mongoClient = await mongo.connect();
-    const database = mongoClient.db('steamMarket');
-    const collection = database.collection(`v1:${itemUrl}`);
+    const database = mongoClient.db(DB_NAME);
+    const collection = database.collection(COLLECTION_NAME);
 
     const itemData = await steamApi.fetchItemData(itemUrl);
-    console.log('Item data fetched, saving to DB');
+    console.log(`Item stats fetched, saving to database "${DB_NAME}" in collection "${COLLECTION_NAME}"`);
     const now = new Date();
     const fetchedAtISOString = now.toISOString();
     const entry = {
+      itemUrl,
       fetchedAt: fetchedAtISOString,
       itemData,
     };
