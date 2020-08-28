@@ -57,12 +57,12 @@ function draw(itemData) {
         const uahRate = 27.47
         const priceUAH = Math.round(price * uahRate);
         const tooltip = `Day: ${day}\nPrice (UAH): ${priceUAH}\nQuantity: ${quantity}`
-        return [day, priceUAH, quantity, tooltip]
+        return [new Date(day), priceUAH, quantity, tooltip]
       });
 
     var data = new google.visualization.DataTable();
 
-    data.addColumn('string', 'day');
+    data.addColumn('date', 'day');
     data.addColumn('number', 'price (UAH)');
     data.addColumn('number', 'quantity');
     data.addColumn({type: 'string', role: 'tooltip'});
@@ -80,7 +80,8 @@ function draw(itemData) {
         // Adds labels to each axis; they don't have to match the axis names.
         0: {title: 'Prices (UAH)'},
         1: {title: 'Quantity'}
-      }
+      },
+      explorer: {},
     };
 
     var chart = new google.visualization.LineChart(createChartElement());
