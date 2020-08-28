@@ -1,0 +1,1 @@
+node ../fetchAndSave.js

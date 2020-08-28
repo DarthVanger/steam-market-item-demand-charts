@@ -1,0 +1,23 @@
+{
+  "name": "steam-market-item-demand-charts",
+  "version": "1.0.0",
+  "description": "An attempt to build charts for a Steam market item demand using [Steam API](https://steamapis.com/docs/market#item).",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx http-server ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DarthVanger/steam-market-item-demand-charts.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DarthVanger/steam-market-item-demand-charts/issues"
+  },
+  "homepage": "https://github.com/DarthVanger/steam-market-item-demand-charts#readme",
+  "dependencies": {
+    "mongodb": "^3.6.0",
+    "node-fetch": "^2.6.0"
+  }
+}
