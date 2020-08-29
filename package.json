@@ -4,7 +4,7 @@
   "description": "An attempt to build charts for a Steam market item demand using [Steam API](https://steamapis.com/docs/market#item).",
   "main": "index.js",
   "scripts": {
-    "start": "npx http-server ."
+    "start": "npx http-server -p 80 src"
   },
   "repository": {
     "type": "git",

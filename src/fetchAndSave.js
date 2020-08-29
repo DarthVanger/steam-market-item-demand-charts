@@ -1,12 +1,6 @@
 const mongo = require('./mongo');
 const steamApi = require('./steamApi');
 
-const pizzaDocument = {
-  name: "Neapolitan pizza",
-  shape: "round",
-  toppings: [ "San Marzano tomatoes", "mozzarella di bufala cheese" ],
-};
-
 let mongoClient;
 
 const itemUrl = 'https://steamcommunity.com/market/listings/730/Chroma%203%20Case'
