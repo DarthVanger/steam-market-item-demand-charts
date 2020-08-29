@@ -73,10 +73,12 @@ async function startServer() {
 }
 
 async function getItemData() {
-  console.log('Connecting to Mongo');
-  const { client, collection } = await mongo.connect();
+  const client = mongo.createClient();
 
   try {
+    console.log('Connecting to Mongo');
+    const collection = await mongo.connect();
+
     const query = { };
     const cursor = collection.find(query);
     data = await cursor.toArray();

@@ -6,11 +6,13 @@ const uri = "mongodb://localhost:27017";
 const DB_NAME = 'steamMarket';
 const COLLECTION_NAME = 'v3_fetchedItemsStats';
 
+let client;
+
+function createClient() {
+  return client = new MongoClient(uri);
+}
 
 async function connect() {
-  // Create a new MongoClient
-  const client = new MongoClient(uri);
-
   try {
     // Connect the client to the server
     await client.connect();
@@ -19,12 +21,13 @@ async function connect() {
 
     const database = client.db(DB_NAME);
     const collection = database.collection(COLLECTION_NAME);
-    return { client, collection };
+    return collection;
   } catch (e) {
     console.dir(e);
   }
 }
 
 module.exports = {
+  createClient,
   connect,
 }
