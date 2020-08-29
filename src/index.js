@@ -65,25 +65,76 @@ function draw(historicalData) {
 
   console.log('histogramPrices: ', histogramPrices);
 
-  const sellOrderLines = [];
-  histogramPrices.forEach(price => {
-    const line = [];
-    historicalData.forEach(historicalItem => {
-      const dateFetched = new Date(historicalItem.fetchedAt);
-      const apiDataUpdateDate = new Date(historicalItem.itemData.updated_at);
-      const sellOrderGraphItem = getSellOrderGraph(historicalItem).find(x => x[0] === price);
-      const quantity = sellOrderGraphItem[1];
-      const tooltip = sellOrderGraphItem[2];
-      line.push([apiDataUpdateDate, price, quantity, tooltip]);
+  const updatedAtTimestamps = new Set();
+  historicalData.forEach(historicalItem => {
+    updatedAtTimestamps.add(historicalItem.itemData.updated_at);
+  });
+  console.log('updatedAtTimestamps: ', updatedAtTimestamps);
+
+const updatedAtDates = [];
+function generateSellOrdersDataTable() {
+  const columnNames = [];
+  const rows = [];
+  let timestampIndex = 0;
+  updatedAtTimestamps.forEach((timestamp) => {
+    const date = new Date(timestamp);
+    date.setHours(0,0,0,0);
+    updatedAtDates.push(date);
+    const historicalItem = historicalData.find(h => h.itemData.updated_at === timestamp);
+    const quantities = getSellOrderGraph(historicalItem).map(x => x[1]);
+    const row = [date];
+    getSellOrderGraph(historicalItem).map(graphItem => {
+      const [price, quantity, tooltip] = graphItem;
+      console.log('timestampIndex: ', timestampIndex);
+      if (timestampIndex === 0) {
+        columnNames.push(`$${price} or lower`);
+      }
+      row.push(quantity);
     });
-    sellOrderLines.push(line); 
+    rows.push(row); 
+    timestampIndex++;
   });
 
-  console.log('sellOrderLines: ', sellOrderLines);
-  console.log('fetchedAt vs updatedAt: ', historicalData.map(h => ({
-    fetched_at: new Date(h.fetchedAt),
-    updated_at: new Date(h.itemData.updated_at),
-  })));
+  console.log('columnNames: ', columnNames);
+  console.log('rows: ', rows);
+
+  const dataTable = new google.visualization.DataTable();
+  dataTable.addColumn('date', 'Date');
+  columnNames.forEach(columnName => {
+    dataTable.addColumn('number', columnName);
+  });
+
+  dataTable.addRows(rows);
+
+  console.log('dataTable: ', dataTable);
+
+  return dataTable;
+}
+
+drawSellOrders(generateSellOrdersDataTable());
+
+function drawSellOrders(dataTable) {
+    var options = {
+      title: 'Sell orders histogram dynamics',
+      explorer: {},
+      hAxis: {
+       format: 'dd/MM/yy',
+        viewWindow: {
+          min: updatedAtDates[0],
+          max: updatedAtDates[updatedAtDates.length - 1],
+        },
+        viewWindowMode: 'explicit',
+        ticks: updatedAtDates,
+        gridlines: {
+          count: 2//updatedAtDates.length,
+        }
+      },
+      chartArea: { left: '8%', top: '8%', width: "70%", height: "70%"}
+    };
+
+  var chart = new google.visualization.LineChart(createChartElement());
+  chart.draw(dataTable, options);
+}
 
 
   const sellOrders = historicalData.map(historicalItem => ({
@@ -99,14 +150,14 @@ function draw(historicalData) {
     avgPrices,
   });
 
-  drawOrders({
-    title: 'Sell orders total',
-    data: historicalData.histogram.sell_order_graph
-  })
-  drawOrders({
-    title: 'Buy orders total',
-    histogram:  historicalData.histogram.buy_order_graph
-  })
+  //drawOrders({
+  //  title: 'Sell orders total',
+  //  data: historicalData.histogram.sell_order_graph
+  //})
+  //drawOrders({
+  //  title: 'Buy orders total',
+  //  histogram:  historicalData.histogram.buy_order_graph
+  //})
 
   function drawMedianAvgPrices({ title, avgPrices, isQuantityChart }) {
     console.log('avgPrices: ', avgPrices)
@@ -204,8 +255,8 @@ function usdToUah(usd) {
 
 function createChartElement() {
   const element = document.createElement('div');
-  element.style.width = '1500px';
-  element.style.height = '400px';
+  element.style.width = '100%';
+  element.style.height = '100vh';
   element.style.marginBottom = '10px';
   chartsContainer.append(element);
   return element;
