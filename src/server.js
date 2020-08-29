@@ -37,6 +37,19 @@ async function responWithIndexHtml(res) {
   }
 }
 
+async function respondWithJSFile({ res, filePath }) {
+  try {
+    const file = await fs.readFile(filePath, 'utf-8');
+    console.log(`Successfully read JS file "${filePath}"`);
+    res.writeHead(200, {'Content-Type': 'text/javascript'})
+    res.write(file);
+    res.end();
+  } catch (error) {
+    console.error(`Failed to send JS file "${filePath}", error: `, error.message);
+    throw error;
+  }
+}
+
 async function startServer() {
   http.createServer((req, res) => {
     const url = req.url;
@@ -47,6 +60,12 @@ async function startServer() {
 
     if (url === '/item') {
       respondWithData(res).catch (respondWith500);
+    }
+
+    if (/.+[.]js/.test(url)) {
+      const filePath = url.substring(1);
+      console.log(`Reading requested file "${filePath}"`);
+      respondWithJSFile({ res, filePath });
     }
   }).listen(80, () => {
     console.log('Server started, listening port 80');
