@@ -1,0 +1,5 @@
+https://unix.stackexchange.com/a/225407/286952
+sudo systemctl start steam_market_item_demand_charts
+systemctl status steam_market_item_demand_charts.service
+journalctl -u steam_market_item_demand_charts.service
+sudo vim /etc/systemd/system/steam_market_item_demand_charts.service
