@@ -1,20 +1,3 @@
-//async function fetchItemData(itemUrl) {
-//  const market_hash_name = itemUrl.replace(/.+\//, '')
-//
-//  const API_KEY = 'jb_EQ2nnwcwrhXpB0GAfJMgEhIo'
-//  const APP_ID = 730
-//
-//  const url = `https://api.steamapis.com/market/item/${APP_ID}/${market_hash_name}?api_key=${API_KEY}`
-//  const response = await fetch(url);
-//  return await response.json();
-//}
-//
-//const itemUrl = 'https://steamcommunity.com/market/listings/730/Chroma%203%20Case'
-//fetchItemData(itemUrl).then(itemData => {
-//  console.log('fresh steam item data: ', itemData);
-//});
-
-
 const url = '/item';
 
 google.charts.load('current', {'packages':['corechart', 'line']});
@@ -25,13 +8,11 @@ const chartsContainer = document.querySelector('#charts')
 function handleGoogleChartLibLoad() {
   console.log('google chart lib loaded');
 
-  console.log('fetching data from steam');
+  console.log('fetching data from server');
   fetch(url)
     .then(response => response.json())
     .then(data => draw(data));
 }
-
-const getHistogram = (itemData) => itemData.itemData.histogram
 
 function draw(historicalData) {
   console.log('historical steam data fetched');
@@ -46,118 +27,77 @@ function draw(historicalData) {
 
   const avgPrices = latestItemData.median_avg_prices_15days;
 
-  const buyOrders = historicalData.map(historicalItem => ({
-      date: new Date(historicalItem.fetchedAt),
-      //quantity: historicalItem.itemData.histogram.buy_order_summary.quantity,
-      quantity: historicalItem.itemData.histogram.buy_order_graph.reduce((acc, curr) => acc + curr[1], 0)
-  }));
-
   const getSellOrderGraph = (historicalItem) => historicalItem.itemData.histogram.sell_order_graph;
 
-  const histogramPrices = new Set();
-  historicalData.forEach(historicalItem => {
-    const sellOrderGraph = getSellOrderGraph(historicalItem);
-    sellOrderGraph.forEach(graphItem => {
-      const price = graphItem[0];
-      histogramPrices.add(price);
+
+  const updatedAtDates = [];
+  function generateSellOrdersDataTable() {
+    const updatedAtTimestamps = new Set();
+    historicalData.forEach(historicalItem => {
+      updatedAtTimestamps.add(historicalItem.itemData.updated_at);
     });
-  });
+    console.log('updatedAtTimestamps: ', updatedAtTimestamps);
 
-  console.log('histogramPrices: ', histogramPrices);
-
-  const updatedAtTimestamps = new Set();
-  historicalData.forEach(historicalItem => {
-    updatedAtTimestamps.add(historicalItem.itemData.updated_at);
-  });
-  console.log('updatedAtTimestamps: ', updatedAtTimestamps);
-
-const updatedAtDates = [];
-function generateSellOrdersDataTable() {
-  const columnNames = [];
-  const rows = [];
-  let timestampIndex = 0;
-  updatedAtTimestamps.forEach((timestamp) => {
-    const date = new Date(timestamp);
-    date.setHours(0,0,0,0);
-    updatedAtDates.push(date);
-    const historicalItem = historicalData.find(h => h.itemData.updated_at === timestamp);
-    const quantities = getSellOrderGraph(historicalItem).map(x => x[1]);
-    const row = [date];
-    getSellOrderGraph(historicalItem).map(graphItem => {
-      const [price, quantity, tooltip] = graphItem;
-      console.log('timestampIndex: ', timestampIndex);
-      if (timestampIndex === 0) {
-        columnNames.push(`$${price} or lower`);
-      }
-      row.push(quantity);
-    });
-    rows.push(row); 
-    timestampIndex++;
-  });
-
-  console.log('columnNames: ', columnNames);
-  console.log('rows: ', rows);
-
-  const dataTable = new google.visualization.DataTable();
-  dataTable.addColumn('date', 'Date');
-  columnNames.forEach(columnName => {
-    dataTable.addColumn('number', columnName);
-  });
-
-  dataTable.addRows(rows);
-
-  console.log('dataTable: ', dataTable);
-
-  return dataTable;
-}
-
-drawSellOrders(generateSellOrdersDataTable());
-
-function drawSellOrders(dataTable) {
-    var options = {
-      title: 'Sell orders histogram dynamics',
-      explorer: {},
-      hAxis: {
-       format: 'dd/MM/yy',
-        viewWindow: {
-          min: updatedAtDates[0],
-          max: updatedAtDates[updatedAtDates.length - 1],
-        },
-        viewWindowMode: 'explicit',
-        ticks: updatedAtDates,
-        gridlines: {
-          count: 2//updatedAtDates.length,
+    const columnNames = [];
+    const rows = [];
+    let timestampIndex = 0;
+    updatedAtTimestamps.forEach((timestamp) => {
+      const date = new Date(timestamp);
+      //date.setHours(0,0,0,0);
+      updatedAtDates.push(date);
+      const historicalItem = historicalData.find(h => h.itemData.updated_at === timestamp);
+      const quantities = getSellOrderGraph(historicalItem).map(x => x[1]);
+      const row = [date];
+      getSellOrderGraph(historicalItem).map(graphItem => {
+        const [price, quantity, tooltip] = graphItem;
+        console.log('timestampIndex: ', timestampIndex);
+        if (timestampIndex === 0) {
+          columnNames.push(`$${price} or lower`);
         }
-      },
-      chartArea: { left: '8%', top: '8%', width: "70%", height: "70%"}
-    };
+        row.push(quantity);
+      });
+      rows.push(row); 
+      timestampIndex++;
+    });
 
-  var chart = new google.visualization.LineChart(createChartElement());
-  chart.draw(dataTable, options);
-}
+    console.log('columnNames: ', columnNames);
+    console.log('rows: ', rows);
 
+    const dataTable = new google.visualization.DataTable();
+    dataTable.addColumn('date', 'Date');
+    columnNames.forEach(columnName => {
+      dataTable.addColumn('number', columnName);
+    });
 
-  const sellOrders = historicalData.map(historicalItem => ({
-      date: new Date(historicalItem.fetchedAt),
-      quantity: historicalItem.itemData.histogram.sell_order_graph.reduce((acc, curr) => acc + curr[1], 0)
-  }));
+    dataTable.addRows(rows);
 
-  console.log('buyOrders: ', buyOrders);
-  console.log('sellOrders: ', sellOrders);
+    console.log('dataTable: ', dataTable);
 
-  drawMedianAvgPrices({
-    title: 'Median average prices',
-    avgPrices,
-  });
+    return dataTable;
+  }
 
-  //drawOrders({
-  //  title: 'Sell orders total',
-  //  data: historicalData.histogram.sell_order_graph
-  //})
-  //drawOrders({
-  //  title: 'Buy orders total',
-  //  histogram:  historicalData.histogram.buy_order_graph
-  //})
+  function drawSellOrders(dataTable) {
+      var options = {
+        title: 'Sell orders histogram dynamics',
+        explorer: {},
+        hAxis: {
+         format: 'dd/MM/yy hh:mm:ss',
+          viewWindow: {
+            min: updatedAtDates[0],
+            max: updatedAtDates[updatedAtDates.length - 1],
+          },
+          viewWindowMode: 'explicit',
+          ticks: updatedAtDates,
+          gridlines: {
+            count: updatedAtDates.length,
+          }
+        },
+        chartArea: { left: '8%', top: '8%', width: "70%", height: "70%"}
+      };
+
+    var chart = new google.visualization.LineChart(createChartElement());
+    chart.draw(dataTable, options);
+  }
 
   function drawMedianAvgPrices({ title, avgPrices, isQuantityChart }) {
     console.log('avgPrices: ', avgPrices)
@@ -200,53 +140,14 @@ function drawSellOrders(dataTable) {
     chart.draw(data, options);
   }
 
-  function drawOrders({ histogram, title  }) {
-    console.log('title: ', title);
-    console.log('histogram: ', histogram);
+  drawMedianAvgPrices({
+    title: 'Median average prices',
+    avgPrices,
+  });
 
-    const chart_data = histogram
-      .map((item) => {
-        const [price, quantity, tooltip] = item;
-
-        const uahRate = 27.47
-        const tooltipWithUah = tooltip.replace(/(\$[\S]+\s)/, `$1 (${Math.round(price * uahRate)} UAH) `);
-        const priceUAH = Math.round(price * uahRate) 
-
-        return [
-          quantity,
-          priceUAH,
-          tooltipWithUah
-        ]
-      });
-
-    console.log('chart_data: ', chart_data)
-
-    var data = new google.visualization.DataTable();
-
-    data.addColumn('number', 'quantity');
-    data.addColumn('number', 'price');
-    data.addColumn({type: 'string', role: 'tooltip'});
-
-    data.addRows(chart_data);
-
-    var options = {
-      title,
-      legend: 'none',
-      vAxis: {
-        maxValue: usdToUah(itemData.histogram.graph_max_x) + 10,
-        minValue: usdToUah(itemData.histogram.graph_min_x),
-      },
-      hAxis: {
-        maxValue: itemData.histogram.graph_max_y,
-        minValue: 0,
-      }
-    };
-
-    var chart = new google.visualization.LineChart(createChartElement());
-
-    chart.draw(data, options);
-  }
+  drawSellOrders(generateSellOrdersDataTable());
 }
+
 
 function usdToUah(usd) {
   uahRate = 27.47;
