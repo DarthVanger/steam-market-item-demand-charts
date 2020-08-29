@@ -1,13 +1,21 @@
-const itemUrl = 'https://steamcommunity.com/market/listings/730/Sticker%20%7C%20NiKo%20%28Foil%29%20%7C%20Berlin%202019'
+//async function fetchItemData(itemUrl) {
+//  const market_hash_name = itemUrl.replace(/.+\//, '')
+//
+//  const API_KEY = 'jb_EQ2nnwcwrhXpB0GAfJMgEhIo'
+//  const APP_ID = 730
+//
+//  const url = `https://api.steamapis.com/market/item/${APP_ID}/${market_hash_name}?api_key=${API_KEY}`
+//  const response = await fetch(url);
+//  return await response.json();
+//}
+//
+//const itemUrl = 'https://steamcommunity.com/market/listings/730/Chroma%203%20Case'
+//fetchItemData(itemUrl).then(itemData => {
+//  console.log('fresh steam item data: ', itemData);
+//});
 
-const market_hash_name = itemUrl.replace(/.+\//, '')
-console.log('market_hash_name: ', market_hash_name)
 
-const API_KEY = 'jb_EQ2nnwcwrhXpB0GAfJMgEhIo'
-const APP_ID = 730
-
-const url = `https://api.steamapis.com/market/item/${APP_ID}/${market_hash_name}?api_key=${API_KEY}`
-
+const url = '/item';
 
 google.charts.load('current', {'packages':['corechart', 'line']});
 google.charts.setOnLoadCallback(handleGoogleChartLibLoad);
@@ -23,30 +31,82 @@ function handleGoogleChartLibLoad() {
     .then(data => draw(data));
 }
 
-function draw(itemData) {
-  console.log('steam data fetched');
-  console.log('itemData: ', itemData)
+const getHistogram = (itemData) => itemData.itemData.histogram
+
+function draw(historicalData) {
+  console.log('historical steam data fetched');
+  console.log('historicalData: ', historicalData)
+
+  const latestItemData = historicalData.sort((a, b) => Date.parse(b.fetchedAt) - Date.parse(a.fetchedAt))[0].itemData;
+  console.log('latestItemData:', latestItemData);
 
   const itemInfoContainer = document.querySelector('#item-info')
 
-  itemInfoContainer.innerHTML = `<h1>${decodeURI(market_hash_name)}</h1>`
+  itemInfoContainer.innerHTML = `<h1>${decodeURI(latestItemData.market_hash_name)}</h1>`
 
-  const avgPrices = itemData.median_avg_prices_15days;
+  const avgPrices = latestItemData.median_avg_prices_15days;
+
+  const buyOrders = historicalData.map(historicalItem => ({
+      date: new Date(historicalItem.fetchedAt),
+      //quantity: historicalItem.itemData.histogram.buy_order_summary.quantity,
+      quantity: historicalItem.itemData.histogram.buy_order_graph.reduce((acc, curr) => acc + curr[1], 0)
+  }));
+
+  const getSellOrderGraph = (historicalItem) => historicalItem.itemData.histogram.sell_order_graph;
+
+  const histogramPrices = new Set();
+  historicalData.forEach(historicalItem => {
+    const sellOrderGraph = getSellOrderGraph(historicalItem);
+    sellOrderGraph.forEach(graphItem => {
+      const price = graphItem[0];
+      histogramPrices.add(price);
+    });
+  });
+
+  console.log('histogramPrices: ', histogramPrices);
+
+  const sellOrderLines = [];
+  histogramPrices.forEach(price => {
+    const line = [];
+    historicalData.forEach(historicalItem => {
+      const dateFetched = new Date(historicalItem.fetchedAt);
+      const apiDataUpdateDate = new Date(historicalItem.itemData.updated_at);
+      const sellOrderGraphItem = getSellOrderGraph(historicalItem).find(x => x[0] === price);
+      const quantity = sellOrderGraphItem[1];
+      const tooltip = sellOrderGraphItem[2];
+      line.push([apiDataUpdateDate, price, quantity, tooltip]);
+    });
+    sellOrderLines.push(line); 
+  });
+
+  console.log('sellOrderLines: ', sellOrderLines);
+  console.log('fetchedAt vs updatedAt: ', historicalData.map(h => ({
+    fetched_at: new Date(h.fetchedAt),
+    updated_at: new Date(h.itemData.updated_at),
+  })));
+
+
+  const sellOrders = historicalData.map(historicalItem => ({
+      date: new Date(historicalItem.fetchedAt),
+      quantity: historicalItem.itemData.histogram.sell_order_graph.reduce((acc, curr) => acc + curr[1], 0)
+  }));
+
+  console.log('buyOrders: ', buyOrders);
+  console.log('sellOrders: ', sellOrders);
+
   drawMedianAvgPrices({
     title: 'Median average prices',
     avgPrices,
   });
 
-  if (itemData.histogram) {
-    drawHistogram({
-      title: 'Sell orders price in UAH vs quantity',
-      histogram: itemData.histogram.sell_order_graph
-    })
-    drawHistogram({
-      title: 'Buy orders price in UAH vs quantity',
-      histogram:  itemData.histogram.buy_order_graph
-    })
-  }
+  drawOrders({
+    title: 'Sell orders total',
+    data: historicalData.histogram.sell_order_graph
+  })
+  drawOrders({
+    title: 'Buy orders total',
+    histogram:  historicalData.histogram.buy_order_graph
+  })
 
   function drawMedianAvgPrices({ title, avgPrices, isQuantityChart }) {
     console.log('avgPrices: ', avgPrices)
@@ -89,7 +149,7 @@ function draw(itemData) {
     chart.draw(data, options);
   }
 
-  function drawHistogram({ histogram, title  }) {
+  function drawOrders({ histogram, title  }) {
     console.log('title: ', title);
     console.log('histogram: ', histogram);
 
