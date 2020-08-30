@@ -1,0 +1,39 @@
+response url:  https://steamcommunity.com/market/itemordershistogram?country=UA&language=english&currency=1&item_nameid=149865785&two_factor=0
+responseBody:  {
+  success: 1,
+  sell_order_table: '<table class="market_commodity_orders_table"><tr><th align="right">Price</th><th align="right">Quantity</th></tr><tr><td align="right" class="">$0.06</td><td align="right">5305</td></tr><tr><td align="right" class="">$0.07</td><td align="right">23886</td></tr><tr><td align="right" class="">$0.08</td><td align="right">39573</td></tr><tr><td align="right" class="">$0.09</td><td align="right">31899</td></tr><tr><td align="right" class="">$0.10</td><td align="right">18276</td></tr><tr><td align="right" class="">$0.11 or more</td><td align="right">342120</td></tr></table>',
+  sell_order_summary: '<span class="market_commodity_orders_header_promote">461059</span> for sale starting at <span class="market_commodity_orders_header_promote">$0.06</span>',
+  buy_order_table: '<table class="market_commodity_orders_table"><tr><th align="right">Price</th><th align="right">Quantity</th></tr><tr><td align="right" class="">$0.05</td><td align="right">123831</td></tr><tr><td align="right" class="">$0.04</td><td align="right">822967</td></tr><tr><td align="right" class="">$0.03</td><td align="right">895680</td></tr></table>',
+  buy_order_summary: '<span class="market_commodity_orders_header_promote">1842478</span> requests to buy at <span class="market_commodity_orders_header_promote">$0.05</span> or lower',
+  highest_buy_order: '5',
+  lowest_sell_order: '6',
+  buy_order_graph: [
+    [ 0.05, 123831, '123,831 buy orders at $0.05 or higher' ],
+    [ 0.04, 946798, '946,798 buy orders at $0.04 or higher' ],
+    [ 0.03, 1842478, '1,842,478 buy orders at $0.03 or higher' ]
+  ],
+  sell_order_graph: [
+    [ 0.06, 5305, '5,305 sell orders at $0.06 or lower' ],
+    [ 0.07, 29191, '29,191 sell orders at $0.07 or lower' ],
+    [ 0.08, 68764, '68,764 sell orders at $0.08 or lower' ],
+    [ 0.09, 100663, '100,663 sell orders at $0.09 or lower' ],
+    [ 0.1, 118939, '118,939 sell orders at $0.10 or lower' ],
+    [ 0.11, 166679, '166,679 sell orders at $0.11 or lower' ],
+    [ 0.12, 286275, '286,275 sell orders at $0.12 or lower' ],
+    [ 0.13, 307664, '307,664 sell orders at $0.13 or lower' ],
+    [ 0.14, 339858, '339,858 sell orders at $0.14 or lower' ],
+    [ 0.15, 348652, '348,652 sell orders at $0.15 or lower' ],
+    [ 0.16, 360753, '360,753 sell orders at $0.16 or lower' ],
+    [ 0.17, 362635, '362,635 sell orders at $0.17 or lower' ],
+    [ 0.18, 365746, '365,746 sell orders at $0.18 or lower' ],
+    [ 0.19, 367367, '367,367 sell orders at $0.19 or lower' ],
+    [ 0.2, 370471, '370,471 sell orders at $0.20 or lower' ]
+  ],
+  graph_max_y: 2000000,
+  graph_min_x: 0.03,
+  graph_max_x: 0.2,
+  price_prefix: '$',
+  price_suffix: ''
+}
+numberOfOrders:  461059
+price:  0.06
