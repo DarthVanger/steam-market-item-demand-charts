@@ -28,10 +28,10 @@ function draw(historicalData) {
   const avgPrices = latestItemData.median_avg_prices_15days;
 
   const getSellOrderGraph = (historicalItem) => historicalItem.itemData.histogram.sell_order_graph;
-
+  const getSellOrderSummary = (historicalItem) => historicalItem.itemData.histogram.sell_order_summary;
 
   const updatedAtDates = [];
-  function generateSellOrdersDataTable() {
+  function generateSellOrdersHistogramDynamicsDataTable() {
     const updatedAtTimestamps = new Set();
     historicalData.forEach(historicalItem => {
       updatedAtTimestamps.add(historicalItem.itemData.updated_at);
@@ -76,7 +76,60 @@ function draw(historicalData) {
     return dataTable;
   }
 
-  function drawSellOrders(dataTable) {
+  const generateSellOrdersQuantityDynamicsDataTable = () => {
+    const updatedAtTimestamps = new Set();
+    historicalData.forEach(historicalItem => {
+      updatedAtTimestamps.add(historicalItem.itemData.updated_at);
+    });
+    console.log('updatedAtTimestamps: ', updatedAtTimestamps);
+
+    const rows = [];
+    updatedAtTimestamps.forEach((timestamp) => {
+      const date = new Date(timestamp);
+      const historicalItem = historicalData.find(h => h.itemData.updated_at === timestamp);
+      const {price, quantity} = getSellOrderSummary(historicalItem);
+      const tooltip = `${quantity} order for sale starting at $${price}\nDate: ${date}`
+      rows.push([date, quantity, tooltip]);
+    });
+
+    console.log('rows: ', rows);
+
+    const dataTable = new google.visualization.DataTable();
+    dataTable.addColumn('date', 'Date');
+    dataTable.addColumn('number', 'quantity');
+    dataTable.addColumn({type: 'string', role: 'tooltip'});
+
+    dataTable.addRows(rows);
+
+    return { rows, dataTable };
+  }
+
+  function drawSellOrdersQuantityDynamics({ rows, dataTable }) {
+      const dates = rows.map(r => r[0]);
+      var options = {
+        title: 'Total sell orders quantity dynamics',
+        explorer: {},
+        legend: 'none',
+        hAxis: {
+         format: 'dd/MM/yy hh:mm:ss',
+          viewWindow: {
+            min: dates[0],
+            max: dates[dates.length - 1],
+          },
+          viewWindowMode: 'explicit',
+          ticks: dates,
+          gridlines: {
+            count: dates.length,
+          }
+        },
+        chartArea: { left: '8%', top: '8%', width: "88%", height: "70%"}
+      };
+
+    var chart = new google.visualization.LineChart(createChartElement());
+    chart.draw(dataTable, options);
+  }
+
+  function drawSellOrdersHistogramDynamics(dataTable) {
       var options = {
         title: 'Sell orders histogram dynamics',
         explorer: {},
@@ -145,7 +198,8 @@ function draw(historicalData) {
     avgPrices,
   });
 
-  drawSellOrders(generateSellOrdersDataTable());
+  drawSellOrdersQuantityDynamics(generateSellOrdersQuantityDynamicsDataTable());
+  drawSellOrdersHistogramDynamics(generateSellOrdersHistogramDynamicsDataTable());
 }
 
 
