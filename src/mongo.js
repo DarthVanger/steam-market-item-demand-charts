@@ -4,11 +4,14 @@ const { MongoClient } = require("mongodb");
 const uri = "mongodb://localhost:27017";
 
 const DB_NAME = 'steamMarket';
-const COLLECTION_NAME = 'v3_fetchedItemsStats';
+
+const DEFAULT_COLLECTION_NAME = 'v3_fetchedItemsStats';
 
 let client;
+let collectionName;
 
-function createClient() {
+function createClient({ collection }) {
+  collectionName = collection ? collection : DEFAULT_COLLECTION_NAME;
   return client = new MongoClient(uri);
 }
 
@@ -20,7 +23,7 @@ async function connect() {
     console.log("Connected successfully to Mongo server");
 
     const database = client.db(DB_NAME);
-    const collection = database.collection(COLLECTION_NAME);
+    const collection = database.collection(collectionName);
     return collection;
   } catch (e) {
     console.dir(e);

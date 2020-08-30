@@ -15,10 +15,11 @@ const DB_NAME = 'steamMarket';
 const COLLECTION_NAME = 'v1_crawledItemsStats';
 
 async function run() {
+  const client = mongo.createClient({ collection: COLLECTION_NAME });
+
   try {
-    mongoClient = await mongo.connect();
-    const database = mongoClient.db(DB_NAME);
-    const collection = database.collection(COLLECTION_NAME);
+    console.log('Connecting to Mongo');
+    const collection = await mongo.connect();
 
     const itemData = await crawler.fetchItemData(itemUrl);
     console.log(`Item stats fetched, saving to database "${DB_NAME}" in collection "${COLLECTION_NAME}"`);
@@ -38,7 +39,7 @@ async function run() {
     console.dir(e);
   } finally {
     // Ensures that the client will close when you finish/error
-    await mongoClient.close();
+    await client.close();
   }
 }
 
