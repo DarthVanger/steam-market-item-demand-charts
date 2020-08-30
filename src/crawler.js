@@ -1,7 +1,9 @@
 const puppeteer = require('puppeteer');
 
 async function fetchItemData(itemUrl) {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox'],
+    });
     const page = await browser.newPage();
     let result;
 
