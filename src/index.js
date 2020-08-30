@@ -19,8 +19,41 @@ function handleGoogleChartLibLoad() {
     .then(data => drawCrawlData(data))
 }
 
+const getSellOrderGraph = (historicalItem) => historicalItem.itemData.histogram.sell_order_graph;
+const getSellOrderSummary = (historicalItem) => historicalItem.itemData.histogram.sell_order_summary;
+
 function drawCrawlData(historicalData) {
   console.log('crawl data: ', historicalData);
+  const rows = [];
+  historicalData.forEach(historicalItem => {
+    const date = new Date(historicalItem.fetchedAt);
+    const sellOrderSummary = getSellOrderSummary(historicalItem);
+    console.log('crawl sellOrderSummary: ', sellOrderSummary);
+    const [quantity, price] = sellOrderSummary ;
+    const tooltip = `${quantity} sell orders at price starting at $${price}\nDate: ${date};`
+    rows.push([date, quantity, tooltip]);
+  });
+
+  console.log('crawl chart rows: ', rows);
+
+  const dataTable = new google.visualization.DataTable();
+  dataTable.addColumn('date', 'Date');
+  dataTable.addColumn('number', 'Quantity');
+  dataTable.addColumn({type: 'string', role: 'tooltip'});
+
+  dataTable.addRows(rows);
+
+  var options = {
+    title: 'Total sell orders crawled from Steam webpage',
+    explorer: {},
+      legend: 'none',
+      chartArea: { left: '8%', top: '8%', width: "85%", height: "70%"}
+  };
+
+  var chart = new google.visualization.LineChart(createChartElement());
+  chart.draw(dataTable, options);
+
+  return dataTable;
 }
 
 function draw(historicalData) {
@@ -43,9 +76,6 @@ function draw(historicalData) {
   `;
 
   const avgPrices = latestItemData.median_avg_prices_15days;
-
-  const getSellOrderGraph = (historicalItem) => historicalItem.itemData.histogram.sell_order_graph;
-  const getSellOrderSummary = (historicalItem) => historicalItem.itemData.histogram.sell_order_summary;
 
   const updatedAtDates = [];
   function generateSellOrdersHistogramDynamicsDataTable() {
