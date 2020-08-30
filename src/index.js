@@ -1,4 +1,5 @@
 const url = '/item';
+const urlCrawl = '/crawl/item';
 
 google.charts.load('current', {'packages':['corechart', 'line']});
 google.charts.setOnLoadCallback(handleGoogleChartLibLoad);
@@ -12,9 +13,18 @@ function handleGoogleChartLibLoad() {
   fetch(url)
     .then(response => response.json())
     .then(data => draw(data));
+
+  fetch(urlCrawl)
+    .then(response => response.json())
+    .then(data => drawCrawlData(data))
+}
+
+function drawCrawlData(historicalData) {
+  console.log('crawl data: ', historicalData);
 }
 
 function draw(historicalData) {
+
   console.log('historical steam data fetched');
   console.log('historicalData: ', historicalData)
 

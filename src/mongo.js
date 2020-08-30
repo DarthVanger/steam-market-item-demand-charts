@@ -10,8 +10,14 @@ const DEFAULT_COLLECTION_NAME = 'v3_fetchedItemsStats';
 let client;
 let collectionName;
 
-function createClient({ collection }) {
-  collectionName = collection ? collection : DEFAULT_COLLECTION_NAME;
+function createClient(options) {
+  if (options) {
+    const { collection } = options;
+    collectionName = collection;
+  } else {
+    collectionName = DEFAULT_COLLECTION_NAME;
+  }
+
   return client = new MongoClient(uri);
 }
 

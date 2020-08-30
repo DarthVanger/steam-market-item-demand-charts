@@ -13,14 +13,17 @@ async function run() {
 
 run().catch(console.dir);
 
-function respondWith500 (e) {
-  res.writeHead(500, {'Content-Type': 'text/plain'})
-  res.end(e.message);
-};
-
 async function respondWithData(res) {
   const itemData = await getItemData();
   console.log('Sending http response with data from Mongo');
+  res.writeHead(200, {'Content-Type': 'application/json'})
+  res.write(Buffer.from(JSON.stringify(itemData)));
+  res.end();
+}
+
+async function respondWithCrawlData(res) {
+  const itemData = await getCrawlItemData();
+  console.log('Sending http response with crawl data from Mongo');
   res.writeHead(200, {'Content-Type': 'application/json'})
   res.write(Buffer.from(JSON.stringify(itemData)));
   res.end();
@@ -55,6 +58,13 @@ async function respondWithJSFile({ res, filePath }) {
 async function startServer() {
   http.createServer((req, res) => {
     const url = req.url;
+
+    function respondWith500(e) {
+      res.writeHead(500, {'Content-Type': 'text/plain'})
+      res.end(e.message);
+    };
+
+
     console.log(`Got http request, url: ${url}`);
     if (url === '/') {
       responWithIndexHtml(res).catch(respondWith500);
@@ -62,6 +72,10 @@ async function startServer() {
 
     if (url === '/item') {
       respondWithData(res).catch (respondWith500);
+    }
+
+    if (url === '/crawl/item') {
+      respondWithCrawlData(res).catch (respondWith500);
     }
 
     if (/.+[.]js/.test(url)) {
@@ -76,6 +90,29 @@ async function startServer() {
 
 async function getItemData() {
   const client = mongo.createClient();
+
+  try {
+    console.log('Connecting to Mongo');
+    const collection = await mongo.connect();
+
+    const query = { };
+    const cursor = collection.find(query);
+    data = await cursor.toArray();
+    console.log('Mongo data received');
+    return data;
+  } catch (e) {
+    console.dir(e);
+    throw e;
+  } finally {
+    console.log('Closing mongo connection');
+    await client.close();
+  }
+}
+
+async function getCrawlItemData() {
+  const collectionName =  'v1_crawledItemsStats';
+  console.log(`Getting crawl item data from collection: "${collectionName}"`);
+  const client = mongo.createClient({ collection: collectionName });
 
   try {
     console.log('Connecting to Mongo');
