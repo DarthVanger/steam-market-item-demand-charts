@@ -23,7 +23,14 @@ function draw(historicalData) {
 
   const itemInfoContainer = document.querySelector('#item-info')
 
-  itemInfoContainer.innerHTML = `<h1>${decodeURI(latestItemData.market_hash_name)}</h1>`
+  itemInfoContainer.innerHTML = `
+    <h1>
+      ${decodeURI(latestItemData.market_hash_name)}
+      <small>
+        (<a href="${latestItemData.url}">open in steam</a>)
+      </small>
+    </h1>
+  `;
 
   const avgPrices = latestItemData.median_avg_prices_15days;
 
