@@ -18,6 +18,7 @@ function handleGoogleChartsScriptLoad() {
 function handleGoogleChartLibLoad() {
   console.log('google chart lib loaded');
   drawPriceVsDemand();
+  drawOrdersChart();
 }
 
 function drawPriceVsDemand() {
@@ -78,7 +79,35 @@ function drawPriceVsDemand() {
 function createChartElement() {
   const element = document.createElement('div');
   element.style.width = 'calc(100% + 30px)';
-  element.style.height = '401px';
+  element.style.height = '400px';
   element.style.margin = '15px -15px';
   return element;
+}
+
+function drawOrdersChart() {
+  const ordersHistogramElement = document.querySelector('#orders_histogram');
+  console.log('ordersHistogramElement: ', ordersHistogramElement);
+  const notSubscribedYetElement = createChartElement();
+  notSubscribedYetElement.style.background = 'white';
+  notSubscribedYetElement.style.padding = '15px';
+  notSubscribedYetElement.innerHTML = `
+    <div style="display: flex; height: 100%; align-items: center; justify-content: center;">
+      <button type="button" style="padding: 20px; background: #84079a; color: white; border: none; font-size: 24px; cursor: pointer">
+        Start tracking item order history
+      </button>
+    </div>
+  `;
+
+  const startTrackingOrderHistoryButton = notSubscribedYetElement.querySelector('button');
+
+  startTrackingOrderHistoryButton.onclick = startTrackingItemOrderHistory;
+
+  ordersHistogramElement.after(notSubscribedYetElement);
+}
+
+function startTrackingItemOrderHistory() {
+  const itemUrl = window.location.href;
+  console.log(`Starting to track order history for item: ${itemUrl}`);
+
+  window.postMessage({ type: "TRACK_ORDER_HISTORY", payload: { itemUrl } }, "*");
 }

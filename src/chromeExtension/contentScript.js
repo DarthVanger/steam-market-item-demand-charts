@@ -7,3 +7,26 @@ function injectScript(file, node) {
 }
 
 injectScript( chrome.extension.getURL('injectedScript.js'), 'body');
+
+//var port = chrome.runtime.connect();
+
+window.addEventListener("message", function(event) {
+  // We only accept messages from ourselves
+  if (event.source != window)
+    return;
+
+  if (event.data.type && (event.data.type == "TRACK_ORDER_HISTORY")) {
+    console.log("Content script received: ", event.data);
+    //port.postMessage(event.data.text);
+    const { itemUrl } = event.data.payload;
+
+    fetch(`https://steam-market-demand-analyzer.trade/track/${encodeURIComponent(itemUrl)}`, { mode: 'no-cors' })
+      .then(response => response.text())
+      .then(data => {
+        console.log(`Started tracking item ${itemUrl}`);
+      })
+      .catch(err => {
+        console.log(`Failed to start tracking item. Error: ${err}`);
+      });
+    }
+}, false);
