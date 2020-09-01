@@ -95,7 +95,7 @@ async function startServer() {
     }
 
     if (url === '/crawl/item') {
-      respondWithCrawlData(res).catch (respondWith500);
+      respondWithCrawlData(res).catch(respondWith500);
     }
 
     if (/.+[.]js/.test(url)) {
@@ -107,6 +107,18 @@ async function startServer() {
     if (url.includes('acme-challenge')) {
       responWithPlainTextFile({ res, filePath: url.substr(1) }).catch(respondWith500);
     }
+
+    if (url.includes('/track')) {
+      const itemUrl = url.replace('/track/', '');
+      trackItem(itemUrl)
+        .then(() => {
+          console.log('responding with 200 for /track');
+          res.writeHead(200);
+          res.end();
+        })
+        .catch(respondWith500);
+    }
+
   }).listen(443, () => {
     console.log('Server started, listening port 443');
   });
@@ -147,6 +159,38 @@ async function getCrawlItemData() {
     data = await cursor.toArray();
     console.log('Mongo data received');
     return data;
+  } catch (e) {
+    console.dir(e);
+    throw e;
+  } finally {
+    console.log('Closing mongo connection');
+    await client.close();
+  }
+}
+
+async function trackItem(itemUrl) {
+  const collectionName =  'v2_trackedItems';
+  console.log(`Saving an item url "${itemUrl}" to collection:"${collectionName}"`);
+  const client = mongo.createClient({ collection: collectionName });
+
+  try {
+    console.log('Connecting to Mongo');
+    const collection = await mongo.connect();
+
+    const existingItemsWithSameUrl = await collection.find({ itemUrl }).toArray();
+
+    if (existingItemsWithSameUrl.length > 0) {
+      console.log('Item is already tracked');
+    } else {
+      const entry = { itemUrl };
+      await collection.insertOne(entry);
+      console.log('Inserted the item url to the DB');
+    }
+
+    const query = { };
+    console.log('Tracked items:');
+    const cursor = collection.find(query);
+    await cursor.forEach(console.dir);
   } catch (e) {
     console.dir(e);
     throw e;
