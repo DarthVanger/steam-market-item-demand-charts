@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const http = require('http');
+const https = require('https');
 const fs = require('fs/promises');
 const mongo = require('./mongo');
 const steamApi = require('./steamApi');
@@ -55,8 +55,28 @@ async function respondWithJSFile({ res, filePath }) {
   }
 }
 
+async function responWithPlainTextFile({ res, filePath }) {
+  try {
+    const file = await fs.readFile(filePath, 'utf-8');
+    console.log(`Successfully read plain text file "${filePath}"`);
+    res.writeHead(200, {'Content-Type': 'text/plain'})
+    res.write(file);
+    res.end();
+  } catch (error) {
+    console.error(`Failed to send a plain text file "${filePath}", error: `, error.message);
+    throw error;
+  }
+}
+
 async function startServer() {
-  http.createServer((req, res) => {
+  const key = await fs.readFile('/home/ec2-user/.getssl/steam-market-demand-analyzer.trade/steam-market-demand-analyzer.trade.key');
+  const cert = await fs.readFile('/home/ec2-user/.getssl/steam-market-demand-analyzer.trade/steam-market-demand-analyzer.trade.crt');
+  const options = {
+    key,
+    cert,
+  };
+
+  https.createServer(options, (req, res) => {
     const url = req.url;
 
     function respondWith500(e) {
@@ -83,8 +103,12 @@ async function startServer() {
       console.log(`Reading requested file "${filePath}"`);
       respondWithJSFile({ res, filePath });
     }
-  }).listen(80, () => {
-    console.log('Server started, listening port 80');
+
+    if (url.includes('acme-challenge')) {
+      responWithPlainTextFile({ res, filePath: url.substr(1) }).catch(respondWith500);
+    }
+  }).listen(443, () => {
+    console.log('Server started, listening port 443');
   });
 }
 
