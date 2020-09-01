@@ -3,10 +3,6 @@
   "version": "1.0",
   "description": "Enhances steam market item page by adding a chart showing sold items quantity dynamics",
   "permissions": ["storage"],
-   "background": {
-    "scripts": ["background.js"],
-    "persistent": true 
-  },
   "content_scripts": [
     {
      "matches": ["https://steamcommunity.com/market/listings/*"],
