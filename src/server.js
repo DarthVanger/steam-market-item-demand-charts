@@ -197,7 +197,7 @@ async function trackItem(itemUrl) {
     console.log('Tracked items:');
     const cursor = collection.find(query);
     await cursor.forEach(console.dir);
-    crawlAndSave();
+    await crawlAndSave();
   } catch (e) {
     console.dir(e);
     throw e;
@@ -231,7 +231,7 @@ function runScript(scriptPath, callback) {
 
 }
 
-function crawlAndSave() {
+async function crawlAndSave() {
   console.log('Running crawlAndSave.js from server process');
   runScript('./crawlAndSave.js', function (err) {
       if (err) throw err;
