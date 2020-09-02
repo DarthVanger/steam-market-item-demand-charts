@@ -88,6 +88,11 @@ function drawOrdersChart() {
   const ordersHistogramElement = document.querySelector('#orders_histogram');
   console.log('ordersHistogramElement: ', ordersHistogramElement);
   const notSubscribedYetElement = createChartElement();
+
+  const itemUrl = window.location.href;
+
+  window.postMessage({ type: "GET_ORDER_HISTORY", payload: { itemUrl } }, "*");
+
   notSubscribedYetElement.style.background = 'white';
   notSubscribedYetElement.style.padding = '15px';
   notSubscribedYetElement.innerHTML = `
