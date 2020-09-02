@@ -22,6 +22,20 @@ async function respondWithData(res) {
   res.end();
 }
 
+async function respondWithIsTrackedInfo({ res, itemUrl }) {
+  const isTracked = await isItemTracked(itemUrl);
+  const response = {
+    isTracked,
+  };
+  console.log('Sending http response with isTracked data from Mongo');
+  res.writeHead(200, {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+  });
+  res.write(Buffer.from(JSON.stringify(response)));
+  res.end();
+}
+
 async function respondWithCrawlData({ res, itemUrl }) {
   const itemData = await getCrawlItemData(itemUrl);
   console.log('Sending http response with crawl data from Mongo with CORS header');
@@ -104,6 +118,11 @@ async function startServer() {
       respondWithCrawlData({ res, itemUrl }).catch(respondWith500);
     }
 
+    if (url.includes('/item/is-tracked')) {
+      const itemUrl = url.replace('/item/is-tracked/', '');
+      respondWithIsTrackedInfo({ res, itemUrl }).catch(respondWith500);
+    }
+
     if (/.+[.]js/.test(url)) {
       const filePath = url.substring(1);
       console.log(`Reading requested file "${filePath}"`);
@@ -128,6 +147,28 @@ async function startServer() {
   }).listen(443, () => {
     console.log('Server started, listening port 443');
   });
+}
+
+async function isItemTracked(itemUrl) {
+  const client = mongo.createClient({ collection: 'v2_trackedItems' });
+
+  try {
+    console.log('Connecting to Mongo');
+    const collection = await mongo.connect();
+
+    console.log(`Querying mongo to see if itemUrl "${itemUrl}" is tracked`);
+    const query = { }
+    const cursor = collection.find({ itemUrl });
+    data = await cursor.toArray();
+    console.log('Mongo data received');
+    return data.length > 0;
+  } catch (e) {
+    console.dir(e);
+    throw e;
+  } finally {
+    console.log('Closing mongo connection');
+    await client.close();
+  }
 }
 
 async function getItemData() {
@@ -197,7 +238,6 @@ async function trackItem(itemUrl) {
     console.log('Tracked items:');
     const cursor = collection.find(query);
     await cursor.forEach(console.dir);
-    await crawlAndSave();
   } catch (e) {
     console.dir(e);
     throw e;
@@ -205,36 +245,4 @@ async function trackItem(itemUrl) {
     console.log('Closing mongo connection');
     await client.close();
   }
-}
-
-function runScript(scriptPath, callback) {
-
-    // keep track of whether callback has been invoked to prevent multiple invocations
-    var invoked = false;
-
-    var process = childProcess.fork(scriptPath);
-
-    // listen for errors as they may prevent the exit event from firing
-    process.on('error', function (err) {
-        if (invoked) return;
-        invoked = true;
-        callback(err);
-    });
-
-    // execute the callback once the process has finished running
-    process.on('exit', function (code) {
-        if (invoked) return;
-        invoked = true;
-        var err = code === 0 ? null : new Error('exit code ' + code);
-        callback(err);
-    });
-
-}
-
-async function crawlAndSave() {
-  console.log('Running crawlAndSave.js from server process');
-  runScript('./crawlAndSave.js', function (err) {
-      if (err) throw err;
-      console.log('finished running crawlAndSavejs from server process');
-  });
 }
