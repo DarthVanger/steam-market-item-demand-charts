@@ -39,6 +39,7 @@ window.addEventListener("message", function(event) {
       .then(response => response.json())
       .then(data => {
         console.log('response data: ', data);
+        window.postMessage({ type: "ORDER_HISTORY_FETCHED", payload: { orderHistory: data } }, "*");
       })
       .catch(err => {
         console.log(`Failed to get item order history. Error:`,  err);
