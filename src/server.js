@@ -21,8 +21,8 @@ async function respondWithData(res) {
   res.end();
 }
 
-async function respondWithCrawlData(res) {
-  const itemData = await getCrawlItemData();
+async function respondWithCrawlData({ res, itemUrl }) {
+  const itemData = await getCrawlItemData(itemUrl);
   console.log('Sending http response with crawl data from Mongo');
   res.writeHead(200, {'Content-Type': 'application/json'})
   res.write(Buffer.from(JSON.stringify(itemData)));
@@ -90,12 +90,13 @@ async function startServer() {
       responWithIndexHtml(res).catch(respondWith500);
     }
 
-    if (url === '/item') {
+    if (url.includes('/item')) {
       respondWithData(res).catch (respondWith500);
     }
 
     if (url === '/crawl/item') {
-      respondWithCrawlData(res).catch(respondWith500);
+      const itemUrl = url.replace('/crawl/item/', '');
+      respondWithCrawlData({ res, itemUrl }).catch(respondWith500);
     }
 
     if (/.+[.]js/.test(url)) {
@@ -131,7 +132,7 @@ async function getItemData() {
     console.log('Connecting to Mongo');
     const collection = await mongo.connect();
 
-    const query = { };
+    const query = { }
     const cursor = collection.find(query);
     data = await cursor.toArray();
     console.log('Mongo data received');
@@ -145,7 +146,7 @@ async function getItemData() {
   }
 }
 
-async function getCrawlItemData() {
+async function getCrawlItemData(itemUrl) {
   const collectionName =  'v1_crawledItemsStats';
   console.log(`Getting crawl item data from collection: "${collectionName}"`);
   const client = mongo.createClient({ collection: collectionName });
@@ -154,7 +155,7 @@ async function getCrawlItemData() {
     console.log('Connecting to Mongo');
     const collection = await mongo.connect();
 
-    const query = { };
+    const query = { itemUrl: decodeURIComponent(itemUrl) };
     const cursor = collection.find(query);
     data = await cursor.toArray();
     console.log('Mongo data received');

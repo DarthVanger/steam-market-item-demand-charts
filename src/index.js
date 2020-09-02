@@ -1,5 +1,5 @@
 const url = '/item';
-const urlCrawl = '/crawl/item';
+const urlCrawl = '/crawl/item/https%3A%2F%2Fsteamcommunity.com%2Fmarket%2Flistings%2F730%2FChroma%25203%2520Case';
 
 google.charts.load('current', {'packages':['corechart', 'line']});
 google.charts.setOnLoadCallback(handleGoogleChartLibLoad);
