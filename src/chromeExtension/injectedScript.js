@@ -23,28 +23,6 @@ function handleGoogleChartLibLoad() {
 
 const getSellOrderSummary = (historicalItem) => historicalItem.itemData.histogram.sell_order_summary;
 
-const generateSellOrdersQuantityDynamicsDataTable = (orderHistory) => {
-  const rows = [];
-  orderHistory.forEach((historicalItem) => {
-    console.log('historicalItem: ', historicalItem);
-    const date = new Date(historicalItem.fetchedAt);
-    const [price, quantity] = getSellOrderSummary(historicalItem);
-    const tooltip = `${quantity} order for sale starting at $${price}\nDate: ${date}`
-    rows.push([date, quantity, tooltip]);
-  });
-
-  console.log('rows: ', rows);
-
-  const dataTable = new google.visualization.DataTable();
-  dataTable.addColumn('date', 'Date');
-  dataTable.addColumn('number', 'quantity');
-  dataTable.addColumn({type: 'string', role: 'tooltip'});
-
-  dataTable.addRows(rows);
-
-  return { rows, dataTable };
-}
-
 function drawPriceVsDemand() {
   const chartData = priceHistoryData
     .map(item => {
@@ -153,43 +131,12 @@ function startTrackingItemOrderHistory() {
   window.postMessage({ type: "TRACK_ORDER_HISTORY", payload: { itemUrl } }, "*");
 }
 
-
-function drawSellOrdersQuantityDynamics({ rows, dataTable }) {
-    const dates = rows.map(r => r[0]);
-    var options = {
-      title: 'Total sell orders quantity dynamics',
-      explorer: {},
-      legend: 'none',
-      hAxis: {
-       format: 'dd/MM/yy hh:mm:ss',
-        viewWindow: {
-          min: dates[0],
-          max: dates[dates.length - 1],
-        },
-        viewWindowMode: 'explicit',
-        ticks: dates,
-        gridlines: {
-          count: dates.length,
-        }
-      },
-      chartArea: { left: '8%', top: '8%', width: "88%", height: "70%"}
-    };
-
-  const sellOrderHistoryElement = createChartElement();
-  const ordersHistogramElement = document.querySelector('#orders_histogram');
-  ordersHistogramElement.after(sellOrderHistoryElement);
-
-  var chart = new google.visualization.LineChart(sellOrderHistoryElement);
-  chart.draw(dataTable, options);
-}
-
 function drawCrawlData(historicalData) {
   console.log('crawl data: ', historicalData);
   const rows = [];
   historicalData.forEach(historicalItem => {
     const date = new Date(historicalItem.fetchedAt);
     const sellOrderSummary = getSellOrderSummary(historicalItem);
-    console.log('crawl sellOrderSummary: ', sellOrderSummary);
     const [quantity, price] = sellOrderSummary ;
     const tooltip = `${quantity} sell orders at price starting at $${price}\nDate: ${date};`
     rows.push([date, quantity, tooltip]);
