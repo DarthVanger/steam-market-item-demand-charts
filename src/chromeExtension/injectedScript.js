@@ -87,12 +87,7 @@ function createChartElement() {
 }
 
 function drawOrdersChart() {
-  const ordersHistogramElement = document.querySelector('#orders_histogram');
-  console.log('ordersHistogramElement: ', ordersHistogramElement);
-  const notSubscribedYetElement = createChartElement();
-
   const itemUrl = window.location.href;
-
   window.postMessage({ type: "GET_ORDER_HISTORY", payload: { itemUrl } }, "*");
 
   window.addEventListener("message", function(event) {
@@ -103,25 +98,29 @@ function drawOrdersChart() {
     if (event.data.type && (event.data.type == "ORDER_HISTORY_FETCHED")) {
       console.log("Injected script received: ", event.data);
       const { orderHistory } = event.data.payload;
-      drawCrawlData(orderHistory);
+      if (orderHistory.length > 1) {
+        drawCrawlData(orderHistory);
+      } else {
+        const ordersHistogramElement = document.querySelector('#orders_histogram');
+        console.log('ordersHistogramElement: ', ordersHistogramElement);
+        const notSubscribedYetElement = createChartElement();
+        notSubscribedYetElement.style.background = 'white';
+        notSubscribedYetElement.style.padding = '15px';
+        notSubscribedYetElement.style.width = '100%';
+        notSubscribedYetElement.innerHTML = `
+          <div style="display: flex; height: 100%; align-items: center; justify-content: center;">
+            <button type="button" style="padding: 20px; background: #84079a; color: white; border: none; font-size: 24px; cursor: pointer">
+              Start tracking item order history
+            </button>
+          </div>
+        `;
+        const startTrackingOrderHistoryButton = notSubscribedYetElement.querySelector('button');
+        startTrackingOrderHistoryButton.onclick = startTrackingItemOrderHistory;
+        ordersHistogramElement.after(notSubscribedYetElement);
+      }
     }
   }, false);
 
-  notSubscribedYetElement.style.background = 'white';
-  notSubscribedYetElement.style.padding = '15px';
-  notSubscribedYetElement.innerHTML = `
-    <div style="display: flex; height: 100%; align-items: center; justify-content: center;">
-      <button type="button" style="padding: 20px; background: #84079a; color: white; border: none; font-size: 24px; cursor: pointer">
-        Start tracking item order history
-      </button>
-    </div>
-  `;
-
-  const startTrackingOrderHistoryButton = notSubscribedYetElement.querySelector('button');
-
-  startTrackingOrderHistoryButton.onclick = startTrackingItemOrderHistory;
-
-  ordersHistogramElement.after(notSubscribedYetElement);
 }
 
 function startTrackingItemOrderHistory() {
@@ -155,7 +154,8 @@ function drawCrawlData(historicalData) {
     title: 'Sell orders quantity dynamics',
     explorer: {},
       legend: 'none',
-      chartArea: { left: '8%', top: '8%', width: "85%", height: "70%"}
+      //chartArea: { left: '8%', top: '10%', width: "85%", height: "70%"}
+      chartArea: { left: 60, right: 60 },
   };
 
   const sellOrderHistoryElement = createChartElement();
