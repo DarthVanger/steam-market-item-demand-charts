@@ -23,8 +23,12 @@ async function respondWithData(res) {
 
 async function respondWithCrawlData({ res, itemUrl }) {
   const itemData = await getCrawlItemData(itemUrl);
-  console.log('Sending http response with crawl data from Mongo');
-  res.writeHead(200, {'Content-Type': 'application/json'})
+  console.log('Sending http response with crawl data from Mongo with CORS header');
+  res.writeHead(200, {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+  });
+
   res.write(Buffer.from(JSON.stringify(itemData)));
   res.end();
 }
@@ -90,11 +94,11 @@ async function startServer() {
       responWithIndexHtml(res).catch(respondWith500);
     }
 
-    if (url.includes('/item')) {
+    if (url === '/item') {
       respondWithData(res).catch (respondWith500);
     }
 
-    if (url === '/crawl/item') {
+    if (url.includes('/crawl/item')) {
       const itemUrl = url.replace('/crawl/item/', '');
       respondWithCrawlData({ res, itemUrl }).catch(respondWith500);
     }
