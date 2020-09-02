@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+var childProcess = require('child_process');
 const https = require('https');
 const fs = require('fs/promises');
 const mongo = require('./mongo');
@@ -196,6 +197,7 @@ async function trackItem(itemUrl) {
     console.log('Tracked items:');
     const cursor = collection.find(query);
     await cursor.forEach(console.dir);
+    crawlAndSave();
   } catch (e) {
     console.dir(e);
     throw e;
@@ -203,4 +205,36 @@ async function trackItem(itemUrl) {
     console.log('Closing mongo connection');
     await client.close();
   }
+}
+
+function runScript(scriptPath, callback) {
+
+    // keep track of whether callback has been invoked to prevent multiple invocations
+    var invoked = false;
+
+    var process = childProcess.fork(scriptPath);
+
+    // listen for errors as they may prevent the exit event from firing
+    process.on('error', function (err) {
+        if (invoked) return;
+        invoked = true;
+        callback(err);
+    });
+
+    // execute the callback once the process has finished running
+    process.on('exit', function (code) {
+        if (invoked) return;
+        invoked = true;
+        var err = code === 0 ? null : new Error('exit code ' + code);
+        callback(err);
+    });
+
+}
+
+function crawlAndSave() {
+  console.log('Running crawlAndSave.js from server process');
+  runScript('./crawlAndSave.js', function (err) {
+      if (err) throw err;
+      console.log('finished running crawlAndSavejs from server process');
+  });
 }
