@@ -24,6 +24,7 @@ window.addEventListener("message", function(event) {
       .then(response => response.text())
       .then(data => {
         console.log(`Started tracking item ${itemUrl}`);
+        window.postMessage({ type: "TRACK_ORDER_REQUEST_SUCCESS", payload: { } }, "*");
       })
       .catch(err => {
         console.log(`Failed to start tracking item. Error: ${err}`);

@@ -86,7 +86,10 @@ function createChartElement() {
   return element;
 }
 
+const refreshAttempts = 0;
 function drawOrdersChart() {
+  refreshAttempts++;
+  console.log('refreshAttempts:', refreshAttempts);
   const itemUrl = window.location.href;
   window.postMessage({ type: "GET_ORDER_HISTORY", payload: { itemUrl } }, "*");
 
@@ -117,6 +120,14 @@ function drawOrdersChart() {
         const startTrackingOrderHistoryButton = notSubscribedYetElement.querySelector('button');
         startTrackingOrderHistoryButton.onclick = startTrackingItemOrderHistory;
         ordersHistogramElement.after(notSubscribedYetElement);
+      }
+    }
+
+    if (event.data.type && (event.data.type == "TRACK_ORDER_REQUEST_SUCCESS")) {
+      console.log("Order track start success in injectedScript");
+      if (refreshAttempts < 5) {
+        console.log("Trying to draw chart");
+        drawOrdersChart();
       }
     }
   }, false);
