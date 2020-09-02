@@ -86,12 +86,24 @@ function createChartElement() {
   return element;
 }
 
-const refreshAttempts = 0;
 function drawOrdersChart() {
-  refreshAttempts++;
-  console.log('refreshAttempts:', refreshAttempts);
   const itemUrl = window.location.href;
-  window.postMessage({ type: "GET_ORDER_HISTORY", payload: { itemUrl } }, "*");
+  window.postMessage({ type: "IS_ORDER_TRACKED", payload: { itemUrl } }, "*");
+
+  const ordersHistogramElement = document.querySelector('#orders_histogram');
+  console.log('ordersHistogramElement: ', ordersHistogramElement);
+  const element = createChartElement();
+  element.innerHTML = `
+    <div style="background: white; padding: 15px; width: 100%; height: 100%;">
+      <div style="display: flex; height: 100%; align-items: center; justify-content: center;">
+         <h1 style="color: #84079a; font-size: 24px;"> 
+            Loading order history data...
+         </h1>
+      </div>
+    </div>
+  `;
+
+  ordersHistogramElement.after(element);
 
   window.addEventListener("message", function(event) {
     // We only accept messages from ourselves
@@ -101,33 +113,44 @@ function drawOrdersChart() {
     if (event.data.type && (event.data.type == "ORDER_HISTORY_FETCHED")) {
       console.log("Injected script received: ", event.data);
       const { orderHistory } = event.data.payload;
-      if (orderHistory.length > 1) {
-        drawCrawlData(orderHistory);
+      if (orderHistory.length > 0) {
+        drawCrawlData({ historicalData: orderHistory, element });
       } else {
-        const ordersHistogramElement = document.querySelector('#orders_histogram');
-        console.log('ordersHistogramElement: ', ordersHistogramElement);
-        const notSubscribedYetElement = createChartElement();
-        notSubscribedYetElement.style.background = 'white';
-        notSubscribedYetElement.style.padding = '15px';
-        notSubscribedYetElement.style.width = '100%';
-        notSubscribedYetElement.innerHTML = `
-          <div style="display: flex; height: 100%; align-items: center; justify-content: center;">
-            <button type="button" style="padding: 20px; background: #84079a; color: white; border: none; font-size: 24px; cursor: pointer">
-              Start tracking item order history
-            </button>
+        element.innerHTML = `
+          <div style="background: white; padding: 15px; width: 100%; height: 100%;">
+            <div style="display: flex; height: 100%; align-items: center; justify-content: center;">
+               <h1 style="color: #84079a; font-size: 24px;"> 
+                  The item order history is being tracked. You should start seeing data in 1 hour.
+               </h1>
+            </div>
           </div>
         `;
-        const startTrackingOrderHistoryButton = notSubscribedYetElement.querySelector('button');
-        startTrackingOrderHistoryButton.onclick = startTrackingItemOrderHistory;
-        ordersHistogramElement.after(notSubscribedYetElement);
       }
     }
 
     if (event.data.type && (event.data.type == "TRACK_ORDER_REQUEST_SUCCESS")) {
       console.log("Order track start success in injectedScript");
-      if (refreshAttempts < 5) {
-        console.log("Trying to draw chart");
-        drawOrdersChart();
+      window.postMessage({ type: "GET_ORDER_HISTORY", payload: { itemUrl } }, "*");
+    }
+
+    if (event.data.type && (event.data.type == "ORDER_TRACK_STATUS_FETCHED")) {
+      console.log("ORDER_TRACK_STATUS_FETCHED in injected script");
+      const { isTracked } = event.data.payload;
+      console.log('Is item tracked: ', isTracked);
+      if (isTracked) {
+        window.postMessage({ type: "GET_ORDER_HISTORY", payload: { itemUrl } }, "*");
+      } else {
+        element.innerHTML = `
+          <div style="background: white; padding: 15px; width: 100%; height: 100%;">
+            <div style="display: flex; height: 100%; align-items: center; justify-content: center;">
+              <button type="button" style="padding: 20px; background: #84079a; color: white; border: none; font-size: 24px; cursor: pointer">
+                Start tracking item order history
+              </button>
+            </div>
+          </div>
+        `;
+        const startTrackingOrderHistoryButton = element.querySelector('button');
+        startTrackingOrderHistoryButton.onclick = startTrackingItemOrderHistory;
       }
     }
   }, false);
@@ -141,7 +164,7 @@ function startTrackingItemOrderHistory() {
   window.postMessage({ type: "TRACK_ORDER_HISTORY", payload: { itemUrl } }, "*");
 }
 
-function drawCrawlData(historicalData) {
+function drawCrawlData({ historicalData, element }) {
   console.log('crawl data: ', historicalData);
   const rows = [];
   historicalData.forEach(historicalItem => {
@@ -169,11 +192,7 @@ function drawCrawlData(historicalData) {
       chartArea: { left: 60, right: 60 },
   };
 
-  const sellOrderHistoryElement = createChartElement();
-  const ordersHistogramElement = document.querySelector('#orders_histogram');
-  ordersHistogramElement.after(sellOrderHistoryElement);
-
-  var chart = new google.visualization.LineChart(sellOrderHistoryElement);
+  var chart = new google.visualization.LineChart(element);
 
   chart.draw(dataTable, options);
 

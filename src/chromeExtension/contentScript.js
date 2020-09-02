@@ -46,4 +46,21 @@ window.addEventListener("message", function(event) {
         console.log(`Failed to get item order history. Error:`,  err);
       });
   }
+
+  if (event.data.type && (event.data.type == "IS_ORDER_TRACKED")) {
+    console.log("Content script received: ", event.data);
+    //port.postMessage(event.data.text);
+    const { itemUrl } = event.data.payload;
+
+    fetch(`https://steam-market-demand-analyzer.trade/item/is-tracked/${encodeURIComponent(itemUrl)}`)
+      .then(response => response.json())
+      .then(data => {
+        console.log('response data: ', data);
+        const { isTracked } = data;
+        window.postMessage({ type: "ORDER_TRACK_STATUS_FETCHED", payload: { isTracked } }, "*");
+      })
+      .catch(err => {
+        console.log(`Failed to check if item is tracked. Error:`,  err);
+      });
+  }
 }, false);
