@@ -28,7 +28,7 @@ async function analyze() {
     const report = analytics.reduce((acc, curr) => {
       const percentRounded = isNaN(curr.sellOrderQuantityHourChangePercent) ?
        'unavailable' : (Math.round(curr.sellOrderQuantityHourChangePercent * 10000) / 10000).toFixed(4);
-      return acc += `${percentRounded}% -  ${curr.itemName}\n`;
+      return acc += `${percentRounded}% -  ${curr.itemName} ${curr.itemUrl}\n`;
     }, 'Hourly sell order quantity change:\n');
 
     console.log('report: ', report);
@@ -60,15 +60,16 @@ async function analyze() {
       });
       console.log('previousHourEntry: ', previousHourEntry);
       const itemName = decodeURI(latestEntry.itemUrl.replace(/.+[/]/, ''));
+      let sellOrderQuantityHourChangePercent;
       if (previousHourEntry) {
         const getSellOrderQuantity = entry => entry.itemData.histogram.sell_order_summary[0];
-        const sellOrderQuantityHourChangePercent = ((getSellOrderQuantity(latestEntry) - getSellOrderQuantity(previousHourEntry)) / getSellOrderQuantity(latestEntry));
+        sellOrderQuantityHourChangePercent = ((getSellOrderQuantity(latestEntry) - getSellOrderQuantity(previousHourEntry)) / getSellOrderQuantity(latestEntry));
         console.log('itemName: ', itemName);
         console.log('sellOrderQuantityHourChangePercent: ', sellOrderQuantityHourChangePercent);
       } else {
         sellOrderQuantityHourChangePercent = NaN;
       }
-      analytics.push({ itemName, sellOrderQuantityHourChangePercent });
+      analytics.push({ itemName, sellOrderQuantityHourChangePercent, itemUrl: decodeURIComponent(itemUrl) });
     }
   } catch (e) {
     console.dir(e);
