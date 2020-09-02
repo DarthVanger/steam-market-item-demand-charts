@@ -1,5 +1,6 @@
 const mongo = require('./mongo');
 const crawler = require('./crawler');
+const analyze = require('./analyze');
 
 let mongoClient;
 
@@ -54,6 +55,8 @@ async function run() {
       const cursor = collection.find(query);
       await cursor.forEach(console.dir);
     }
+
+    analyze();
   } catch (e) {
     console.dir(e);
   } finally {
