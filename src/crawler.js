@@ -28,7 +28,7 @@ async function fetchItemData(itemUrl) {
     const bodyHTML = await page.evaluate(documentBody => documentBody.innerHTML, documentBody);
     const medianSalePrices = JSON.parse(bodyHTML.match(/line1=(.+\]\]);/)[1]);
 
-    result.medianSalePrices = medianSalePrices;
+    result.salePriceInfo = medianSalePrices[medianSalePrices.length - 1];
 
     await browser.close();
     console.log('Puppeteer: crawl successful');
