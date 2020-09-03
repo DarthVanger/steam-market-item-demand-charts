@@ -5,24 +5,30 @@ async function fetchItemData(itemUrl) {
       args: ['--no-sandbox'],
     });
     const page = await browser.newPage();
-    let result;
+
+    const result = {};
 
     page.on('response', (response) => {
       if (/itemordershistogram/.test(response.url())) {
         (async () => {
           const responseBody = await response.json();
 
-          result = {
-            histogram: {
-              ...responseBody,
-              sell_order_summary: parseOrderSummary(responseBody.sell_order_summary),
-              buy_order_summary: parseOrderSummary(responseBody.buy_order_summary),
-            } 
-          }
+          result.histogram = {
+            ...responseBody,
+            sell_order_summary: parseOrderSummary(responseBody.sell_order_summary),
+            buy_order_summary: parseOrderSummary(responseBody.buy_order_summary),
+          };
         })();
       }
     });
+
     await page.goto(itemUrl,  {waitUntil: 'networkidle2'});
+
+    const documentBody = await page.$('body');
+    const bodyHTML = await page.evaluate(documentBody => documentBody.innerHTML, documentBody);
+    const medianSalePrices = JSON.parse(bodyHTML.match(/line1=(.+\]\]);/)[1]);
+
+    result.medianSalePrices = medianSalePrices;
 
     await browser.close();
     console.log('Puppeteer: crawl successful');
@@ -37,3 +43,6 @@ function parseOrderSummary(order_summary) {
 
   return [numberOfOrders, price];
 }
+
+// for debug
+// fetchItemData('https://steamcommunity.com/market/listings/730/Chroma%203%20Case');
