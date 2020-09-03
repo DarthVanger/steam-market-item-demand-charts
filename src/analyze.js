@@ -25,11 +25,13 @@ async function analyze() {
 
     console.log('analytics: ', analytics);
 
+    const roundPercents = (percents) => (Math.round(percents * 100) / 100).toFixed(2);
+
     const report = analytics.reduce((acc, curr) => {
-      const percentRounded = isNaN(curr.sellOrderQuantityHourChangePercent) ?
-       'unavailable' : (Math.round(curr.sellOrderQuantityHourChangePercent * 100 * 10000) / 10000).toFixed(4);
-      return acc += `${percentRounded}% -  ${curr.itemName} ${curr.itemUrl}\n`;
-    }, 'Hourly sell order quantity change:\n');
+      const percentRounded = curr.hasEnoughData ?
+        `${curr.sellOrderQuantityChangePercent > 0 ? '+' : ''}${roundPercents(curr.sellOrderQuantityChangePercent)}%` : 'not enough data yet';
+      return acc += `${percentRounded} -  ${curr.itemName} ${curr.itemUrl}\n`;
+    }, '24 hours sell order quantity change:\n');
 
     console.log('report: ', report);
 
@@ -38,38 +40,41 @@ async function analyze() {
     async function analyzeItemData(trackedItem) {
       const { itemUrl } = trackedItem;
       console.log(`Analyzing data for itemUrl "${itemUrl}"`);
+
+      const getSellOrderQuantity = entry => entry.itemData.histogram.sell_order_summary[0];
+
       const itemStatsCollection = await db.collection(itemStatsCollectionName);
-      const itemStatsCursor = await itemStatsCollection.find({ itemUrl: decodeURIComponent(itemUrl) });
-      const itemStats = await itemStatsCursor.toArray();
-      console.log('itemStats: ', itemStats);
-       // '2020-09-02T20:00:22.087Z'
-      const latestEntry = itemStats[itemStats.length - 1];
-      const date = new Date(latestEntry.fetchedAt);
-      console.log('date: ', date);
-      const previousHourDate = new Date(date.getTime());
-      previousHourDate.setHours(date.getHours() - 1);
-      const previous12HoursDate = new Date(date.getTime());
-      previous12HoursDate.setHours(date.getHours() - 12);
-      console.log('previousHourDate: ', previousHourDate);
-      const previousHourEntry = await itemStatsCollection.findOne({
+
+      const now = new Date();
+      date24HoursBack = new Date(now.setHours(now.getHours() - 24)); 
+
+      const last24HoursStats = await itemStatsCollection.find({
         itemUrl: decodeURIComponent(itemUrl),
         fetchedAt: {
-          $gte: new Date(previousHourDate.setMinutes(previousHourDate.getMinutes() - 5)).toISOString(),
-          $lt: new Date(previousHourDate.setMinutes(previousHourDate.getMinutes() + 5)).toISOString(),
+          $gte: date24HoursBack.toISOString(),
         },
-      });
-      console.log('previousHourEntry: ', previousHourEntry);
+      }).toArray();
+
+      const latestEntry = last24HoursStats[last24HoursStats.length - 1];
       const itemName = decodeURI(latestEntry.itemUrl.replace(/.+[/]/, ''));
-      let sellOrderQuantityHourChangePercent;
-      if (previousHourEntry) {
-        const getSellOrderQuantity = entry => entry.itemData.histogram.sell_order_summary[0];
-        sellOrderQuantityHourChangePercent = ((getSellOrderQuantity(latestEntry) - getSellOrderQuantity(previousHourEntry)) / getSellOrderQuantity(latestEntry));
-        console.log('itemName: ', itemName);
-        console.log('sellOrderQuantityHourChangePercent: ', sellOrderQuantityHourChangePercent);
-      } else {
-        sellOrderQuantityHourChangePercent = NaN;
+      console.log('itemName: ', itemName);
+
+      console.log('last24HoursStats length: ', last24HoursStats.length);
+      let sellOrderQuantityChangePercent;
+      const hasEnoughData = last24HoursStats.length > 22;
+      const itemAnalytics = { itemName, itemUrl: decodeURIComponent(itemUrl), hasEnoughData }
+      if (hasEnoughData) {
+        const avgSellOrderQuantity24Hours = last24HoursStats.reduce((acc, curr) => {
+          return acc += getSellOrderQuantity(curr) / last24HoursStats.length;
+        }, 0);
+        const currentSellOrderQuantity = getSellOrderQuantity(latestEntry);
+        console.log('currentSellOrderQuantity: ', currentSellOrderQuantity);
+        console.log('avgSellOrderQuantity24Hours: ', avgSellOrderQuantity24Hours);
+        itemAnalytics.sellOrderQuantityChangePercent = 100 * (currentSellOrderQuantity - avgSellOrderQuantity24Hours) / avgSellOrderQuantity24Hours;
+        console.log('sellOrderQuantityChangePercent: ', sellOrderQuantityChangePercent);
       }
-      analytics.push({ itemName, sellOrderQuantityHourChangePercent, itemUrl: decodeURIComponent(itemUrl) });
+
+      analytics.push(itemAnalytics);
     }
   } catch (e) {
     console.dir(e);
