@@ -27,7 +27,7 @@ async function analyze() {
 
     const report = analytics.reduce((acc, curr) => {
       const percentRounded = isNaN(curr.sellOrderQuantityHourChangePercent) ?
-       'unavailable' : (Math.round(curr.sellOrderQuantityHourChangePercent * 10000) / 10000).toFixed(4);
+       'unavailable' : (Math.round(curr.sellOrderQuantityHourChangePercent * 100 * 10000) / 10000).toFixed(4);
       return acc += `${percentRounded}% -  ${curr.itemName} ${curr.itemUrl}\n`;
     }, 'Hourly sell order quantity change:\n');
 
