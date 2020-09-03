@@ -2,7 +2,7 @@ const dbClient = require('./dbClient');
 const fetch = require('node-fetch');
 
 async function sendTelegram(message) {
-  await fetch(`https://api.telegram.org/bot1271355712:AAGUXY7qE0VjqzmGBUgtVY07vrXqncztpw0/sendMessage?chat_id=@steamMarketAnalyzer&text=${encodeURIComponent(message)}`);
+  //await fetch(`https://api.telegram.org/bot1271355712:AAGUXY7qE0VjqzmGBUgtVY07vrXqncztpw0/sendMessage?chat_id=@steamMarketAnalyzer&text=${encodeURIComponent(message)}`);
 }
 
 async function analyze() {
@@ -14,68 +14,110 @@ async function analyze() {
   try {
     const db = await dbClient.connect();
 
-    const trackedItemsCursor = await db.collection(trackedItemsCollectionName).find({});
-    const trackedItems = await trackedItemsCursor.toArray();
-    console.log('trackedItems', trackedItems);
-
-    const analytics = [];
-    for (const trackedItem of trackedItems) {
-      await analyzeItemData(trackedItem);
-    }
-
-    console.log('analytics: ', analytics);
-
     const roundPercents = (percents) => (Math.round(percents * 100) / 100).toFixed(2);
+    const formatPercents = (percents) => `${percents > 0 ? '+' : ''}${roundPercents(percents))}%`;
+    const getSellOrderQuantity = entry => entry.itemData.histogram.sell_order_summary[0];
 
-    const report = analytics.reduce((acc, curr) => {
-      const percentRounded = curr.hasEnoughData ?
-        `${curr.sellOrderQuantityChangePercent > 0 ? '+' : ''}${roundPercents(curr.sellOrderQuantityChangePercent)}%` : 'not enough data yet';
-      return acc += `${percentRounded} -  ${curr.itemName} ${curr.itemUrl}\n`;
-    }, '24 hours sell order quantity change:\n');
+    const itemStatsCollection = await db.collection(itemStatsCollectionName);
 
-    console.log('report: ', report);
-
-    await sendTelegram(report);
-
-    async function analyzeItemData(trackedItem) {
-      const { itemUrl } = trackedItem;
-      console.log(`Analyzing data for itemUrl "${itemUrl}"`);
-
-      const getSellOrderQuantity = entry => entry.itemData.histogram.sell_order_summary[0];
-
-      const itemStatsCollection = await db.collection(itemStatsCollectionName);
-
+    const getLast24HoursStats = async (trackedItem) => {
       const now = new Date();
       date24HoursBack = new Date(now.setHours(now.getHours() - 24)); 
-
-      const last24HoursStats = await itemStatsCollection.find({
-        itemUrl: decodeURIComponent(itemUrl),
+      return await itemStatsCollection.find({
+        itemUrl: decodeURIComponent(trackedItem.itemUrl),
         fetchedAt: {
           $gte: date24HoursBack.toISOString(),
         },
       }).toArray();
+    }
 
+    const getItemName = (entry) => decodeURI(entry.itemUrl.replace(/.+[/]/, ''));
+  
+    const generateSellOrdersReport = (last24HoursStats) => {
       const latestEntry = last24HoursStats[last24HoursStats.length - 1];
-      const itemName = decodeURI(latestEntry.itemUrl.replace(/.+[/]/, ''));
-      console.log('itemName: ', itemName);
 
-      console.log('last24HoursStats length: ', last24HoursStats.length);
-      let sellOrderQuantityChangePercent;
-      const hasEnoughData = last24HoursStats.length > 22;
-      const itemAnalytics = { itemName, itemUrl: decodeURIComponent(itemUrl), hasEnoughData }
-      if (hasEnoughData) {
+      const getEntriesWithHistogram = () => last24HoursStats.filter((entry) => (
+        Boolean(entry.itemData.histogram)
+      ));
+
+      if (!latestEntry.itemData.histogram) {
+        return `Failed to retrieve current sell orders quantity for ${getItemName(latestEntry)}`;
+      }
+
+      if (last24HoursStats.length < 22) {
+        return `Not yet enough data collected for ${getItemName(latestEntry)}`;
+      }
+
+      if (getEntriesWithHistogram().length < 10) {
+        return `Failed to retrieve sell orders too many times during last 24 hours for ${getItemName(latestEntry}`;';
+      }
+      
+      const calculateSellOrderQuantityChangePercent = () => {
+        const latestEntry = last24HoursStats[last24HoursStats.length - 1];
+        const currentSellOrderQuantity = getSellOrderQuantity(latestEntry);
         const avgSellOrderQuantity24Hours = last24HoursStats.reduce((acc, curr) => {
           return acc += getSellOrderQuantity(curr) / last24HoursStats.length;
         }, 0);
-        const currentSellOrderQuantity = getSellOrderQuantity(latestEntry);
-        console.log('currentSellOrderQuantity: ', currentSellOrderQuantity);
-        console.log('avgSellOrderQuantity24Hours: ', avgSellOrderQuantity24Hours);
-        itemAnalytics.sellOrderQuantityChangePercent = 100 * (currentSellOrderQuantity - avgSellOrderQuantity24Hours) / avgSellOrderQuantity24Hours;
-        console.log('sellOrderQuantityChangePercent: ', sellOrderQuantityChangePercent);
+        return 100 * (currentSellOrderQuantity - avgSellOrderQuantity24Hours) / avgSellOrderQuantity24Hours;
+      }
+      
+      const percents = calculateSellOrderQuantityChangePercent();
+      
+      return `${formatPercents(percents)} - ${getItemName(latestEntry)} ${getItemUrl(latestEntry)}`;
+    }
+
+    const generatePricesReport = (last24HoursStats) => {
+      const entriesWithSalePriceInfo = last24HoursStats.filter((entry) => (
+        Boolean(entry.itemData.salePriceInfo)
+      ));
+
+      if (!latestEntry.itemData.salePriceInfo) {
+        return `Failed to retrieve current sale price for ${getItemName(latestEntry)}`;
       }
 
-      analytics.push(itemAnalytics);
+      if (last24HoursStats.length < 22) {
+        return `Not yet enough data collected for ${getItemName(latestEntry)}`;
+      }
+
+      if (getEntriesWithSalePricesInfo().length < 10) {
+        return `Failed to retrieve sale price too many times during the last 24 hours for ${getItemName(latestEntry}`;';
+      }
+
+      const calculateSalePriceChangePercent = (last24HourStats) => {
+        const getSalePrice = (entry) => entry.itemData.salePriceInfo[1];
+        const latestEntry = last24HoursStats[last24HoursStats.length - 1];
+        const currentPrice = getSalePrice(latestEntry);
+        console.log('currentPrice: ', currentPrice);
+
+        const avgSalePrice24Hours = entriesWithSalePriceInfo.reduce((acc, curr) => {
+          return acc += getSalePrice(curr) / entriesWithSalePriceInfo.length;
+        }, 0);
+        return 100 * (currentPrice - avgSalePrice24Hours) / avgSalePrice24Hours;
+      }
+
+      const percents = calculateSalePriceChangePercent();
+      
+      return `${formatPercents(percents)} - ${getItemName(latestEntry)} ${getItemUrl(latestEntry)}`;
     }
+
+    const trackedItems = await db.collection(trackedItemsCollectionName).find({}).toArray();
+    console.log('trackedItems', trackedItems);
+
+    let message = '';
+
+    message = 'Sell orders 24 hour change:';
+    for (const trackedItem of trackedItems) {
+      message += generateSellOrdersReport(getLast24HoursStats(trackedItem)) + '\n';
+    }
+
+    await sendTelegram(message);
+
+    message = 'Sale prices 24 hours change:';
+    for (const trackedItem of trackedItems) {
+      message += generatePricesReport(getLast24HoursStats(trackedItem)) + '\n';
+    }
+
+    await sendTelegram(message);
   } catch (e) {
     console.dir(e);
     throw e;
@@ -86,3 +128,6 @@ async function analyze() {
 }
 
 module.exports = analyze;
+
+// for debug
+// analyze();
