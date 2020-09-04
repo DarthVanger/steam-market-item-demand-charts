@@ -1,20 +1,12 @@
 {
-  "name": "Steam market demand charts",
+  "name": "Steam market demand analyzer",
   "version": "1.0",
-  "description": "Enhances steam market item page by adding a chart showing sold items quantity dynamics",
-  "permissions": ["storage"],
+  "description": "Enhances steam market item page with sell quantity chart and ability to track orders quantity change history",
   "content_scripts": [
     {
      "matches": ["https://steamcommunity.com/market/listings/*"],
-     "js": ["contentScript.js"]
+     "js": ["main.js"]
     }
-  ],
-  "web_accessible_resources": [
-    "injectedScript.js"
-  ],
-  "permissions": [
-    "webRequest",
-    "https://steamcommunity.com/"
   ],
   "manifest_version": 2
 }

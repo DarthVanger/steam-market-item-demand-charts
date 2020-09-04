@@ -1,8 +1,13 @@
-const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
+
 module.exports = {
- plugins: [
-   new HtmlWebpackPlugin({
-     title: 'Output Management',
-   }),
- ],
+  mode: 'development',
+  devtool: 'eval-source-map',
+  plugins: [
+    new CopyPlugin({
+      patterns: [
+        { from: 'src/manifest.json', to: '' },
+      ],
+    }),
+  ],
 };

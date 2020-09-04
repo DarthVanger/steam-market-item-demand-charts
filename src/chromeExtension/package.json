@@ -4,7 +4,8 @@
   "description": "",
   "main": "contentScript.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "webpack",
+    "watch": "webpack --watch"
   },
   "author": "darthvanger@gmail.com",
   "license": "ISC",
@@ -14,6 +15,6 @@
     "webpack-cli": "^3.3.12"
   },
   "dependencies": {
-    "lightweight-charts": "^3.1.5"
+    "lightweight-charts": "3.0.1"
   }
 }
