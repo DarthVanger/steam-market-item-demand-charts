@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 
 async function sendTelegram(message) {
   //console.log('telegram message: ', message);
-  //await fetch(`https://api.telegram.org/bot1271355712:AAGUXY7qE0VjqzmGBUgtVY07vrXqncztpw0/sendMessage?chat_id=@steamMarketAnalyzer&text=${encodeURIComponent(message)}`);
+  await fetch(`https://api.telegram.org/bot1271355712:AAGUXY7qE0VjqzmGBUgtVY07vrXqncztpw0/sendMessage?chat_id=@steamMarketAnalyzer&text=${encodeURIComponent(message)}`);
 }
 
 async function analyze() {
@@ -67,7 +67,7 @@ async function analyze() {
 
       if (percents > -5) return;
 
-      return `${formatPercents(percents)} change for ${getItemName(latestEntry)}!\n${getItemUrl(latestEntry)}`;
+      return `${formatPercents(percents)} 24h sell orders quantity change for "${getItemName(latestEntry)}"!\n${getItemUrl(latestEntry)}`;
     }
 
     const generatePricesReport = (last24HoursStats) => {
@@ -102,7 +102,7 @@ async function analyze() {
       
       if (percents < 5) return;
 
-      return `${formatPercents(percents)} sell price change for ${getItemName(latestEntry)}!\n${getItemUrl(latestEntry)}`;
+      return `${formatPercents(percents)} 24h sell price change for "${getItemName(latestEntry)}"!\n${getItemUrl(latestEntry)}`;
     }
 
     const trackedItems = await db.collection(trackedItemsCollectionName).find({}).toArray();
@@ -111,8 +111,8 @@ async function analyze() {
     let message = '';
 
     for (const trackedItem of trackedItems) {
-      const sellOrderSAlert = generateSellOrdersReport(await getLast24HoursStats(trackedItem));
-      if (sellOrderAlert) await sendTelegram(sellOrderAlert);
+      const sellOrdersAlert = generateSellOrdersReport(await getLast24HoursStats(trackedItem));
+      if (sellOrdersAlert) await sendTelegram(sellOrdersAlert);
 
       const sellPricesAlert = generatePricesReport(await getLast24HoursStats(trackedItem));
       if (sellPricesAlert) await sendTelegram(sellPricesAlert);
@@ -130,4 +130,4 @@ async function analyze() {
 module.exports = analyze;
 
 // for debug
- analyze();
+// analyze();
