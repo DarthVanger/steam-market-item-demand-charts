@@ -1,0 +1,19 @@
+{
+  "name": "steam-market-demand-analyzer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "contentScript.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "darthvanger@gmail.com",
+  "license": "ISC",
+  "devDependencies": {
+    "html-webpack-plugin": "^4.4.1",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
+  },
+  "dependencies": {
+    "lightweight-charts": "^3.1.5"
+  }
+}
