@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 
 async function sendTelegram(message) {
   //console.log('telegram message: ', message);
-  await fetch(`https://api.telegram.org/bot1271355712:AAGUXY7qE0VjqzmGBUgtVY07vrXqncztpw0/sendMessage?chat_id=@steamMarketAnalyzer&text=${encodeURIComponent(message)}`);
+  //await fetch(`https://api.telegram.org/bot1271355712:AAGUXY7qE0VjqzmGBUgtVY07vrXqncztpw0/sendMessage?chat_id=@steamMarketAnalyzer&text=${encodeURIComponent(message)}`);
 }
 
 async function analyze() {
@@ -64,8 +64,10 @@ async function analyze() {
       }
       
       const percents = calculateSellOrderQuantityChangePercent();
-      
-      return `${formatPercents(percents)} - ${getItemName(latestEntry)} ${getItemUrl(latestEntry)}`;
+
+      if (percents > -5) return;
+
+      return `${formatPercents(percents)} change for ${getItemName(latestEntry)}!\n${getItemUrl(latestEntry)}`;
     }
 
     const generatePricesReport = (last24HoursStats) => {
@@ -98,7 +100,9 @@ async function analyze() {
 
       const percents = calculateSalePriceChangePercent();
       
-      return `${formatPercents(percents)} - ${getItemName(latestEntry)} ${getItemUrl(latestEntry)}`;
+      if (percents < 5) return;
+
+      return `${formatPercents(percents)} sell price change for ${getItemName(latestEntry)}!\n${getItemUrl(latestEntry)}`;
     }
 
     const trackedItems = await db.collection(trackedItemsCollectionName).find({}).toArray();
@@ -106,19 +110,14 @@ async function analyze() {
 
     let message = '';
 
-    message = 'Sell orders 24 hour change:\n';
     for (const trackedItem of trackedItems) {
-      message += generateSellOrdersReport(await getLast24HoursStats(trackedItem)) + '\n';
+      const sellOrderSAlert = generateSellOrdersReport(await getLast24HoursStats(trackedItem));
+      if (sellOrderAlert) await sendTelegram(sellOrderAlert);
+
+      const sellPricesAlert = generatePricesReport(await getLast24HoursStats(trackedItem));
+      if (sellPricesAlert) await sendTelegram(sellPricesAlert);
     }
 
-    await sendTelegram(message);
-
-    message = 'Sale prices 24 hours change:\n';
-    for (const trackedItem of trackedItems) {
-      message += generatePricesReport(await getLast24HoursStats(trackedItem)) + '\n';
-    }
-
-    await sendTelegram(message);
   } catch (e) {
     console.dir(e);
     throw e;
@@ -131,4 +130,4 @@ async function analyze() {
 module.exports = analyze;
 
 // for debug
-// analyze();
+ analyze();
