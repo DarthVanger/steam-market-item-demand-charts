@@ -65,7 +65,7 @@ async function analyze() {
       
       const percents = calculateSellOrderQuantityChangePercent();
 
-      if (percents > -5) return;
+      if (percents > -50) return;
 
       return `${formatPercents(percents)} 24h sell orders quantity change for "${getItemName(latestEntry)}"!\n${getItemUrl(latestEntry)}`;
     }
@@ -100,7 +100,7 @@ async function analyze() {
 
       const percents = calculateSalePriceChangePercent();
       
-      if (percents < 5) return;
+      if (percents < 50) return;
 
       return `${formatPercents(percents)} 24h sell price change for "${getItemName(latestEntry)}"!\n${getItemUrl(latestEntry)}`;
     }
